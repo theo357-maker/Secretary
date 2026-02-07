@@ -3,16 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion Personnelle - CS la Colombe</title>
+    <title>Espace secretary - hybrilink</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+<!-- PWA Meta Tags -->
+  <meta name="application-name" content="TheoVêt">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="TheoVêt">
+  <meta name="description" content="Solution complète de gestion de commerce de vêtements">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="msapplication-TileColor" content="#3498db">
+  <meta name="msapplication-tap-highlight" content="no">
+  <meta name="theme-color" content="#3498db">
+
+
+
+<!-- Service Worker et mise à jour -->
+    <meta name="version" content="2.1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+
+
+
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="icon-192x192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icon-192x192.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="icon-72x72.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="icon-167x167.png">
+
+  <!-- Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Styles et Bibliothèques -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<!-- Scripts de mise à jour -->
+<script src="update-system.js"></script>
     
     <style>
         :root {
@@ -1459,6 +1489,245 @@
             
             return unpaidStudents;
         }
+// 15. PUBLICATION DU COMMUNIQUÉ - MODIFIÉE
+document.getElementById('communique-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const feeType = document.getElementById('communique-fee-type').value;
+    const otherFee = document.getElementById('communique-other-fee').value;
+    const deadline = document.getElementById('communique-deadline').value;
+    const schoolYear = document.getElementById('communique-school-year').value;
+    const month = document.getElementById('communique-month').value;
+    const amount = parseFloat(document.getElementById('communique-amount').value);
+    const message = document.getElementById('communique-message').value;
+    
+    // Récupérer les classes sélectionnées
+    const selectedClasses = [];
+    document.querySelectorAll('#communique-classes-container .class-checkbox:checked').forEach(checkbox => {
+        selectedClasses.push(checkbox.value);
+    });
+    
+    if (!feeType || !deadline || !schoolYear || !month || !amount || selectedClasses.length === 0) {
+        showAlert("Veuillez remplir tous les champs obligatoires", "error");
+        return;
+    }
+    
+    const finalFeeType = feeType === 'Autres' ? otherFee : feeType;
+    
+    try {
+        // 1. Enregistrer le communiqué principal
+        const communiqueData = {
+            feeType: finalFeeType,
+            deadline,
+            schoolYear,
+            month,
+            amount,
+            classes: selectedClasses,
+            message,
+            publishedBy: currentUser.uid,
+            publishedAt: serverTimestamp(),
+            status: 'published'
+        };
+        
+        // Ajouter avec un ID personnalisé pour référence facile
+        const communiqueId = `comm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const communiqueRef = doc(db, 'parent_communiques', communiqueId);
+        
+        await setDoc(communiqueRef, communiqueData);
+        
+        // 2. Trouver tous les parents concernés par les classes sélectionnées
+        const concernedParents = await findParentsForClasses(selectedClasses);
+        
+        // 3. Pour chaque parent, créer une relation parent-communiqué
+        for (const parent of concernedParents) {
+            const relationId = `${parent.matricule}_${communiqueId}`;
+            const relationRef = doc(db, 'parent_communique_relations', relationId);
+            
+            await setDoc(relationRef, {
+                parentId: parent.matricule,
+                parentName: parent.fullName,
+                communiqueId: communiqueId,
+                studentIds: parent.childrenMatricules || [],
+                studentNames: parent.childrenNames || [],
+                studentClasses: parent.childrenClasses || [],
+                status: 'pending', // 'pending', 'paid', 'overdue'
+                createdAt: serverTimestamp(),
+                expirationDate: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000), // 30 jours
+                feeType: finalFeeType,
+                amount: amount,
+                month: month,
+                deadline: deadline
+            });
+            
+            // 4. Pour chaque enfant, créer une relation élève-communiqué
+            for (let i = 0; i < parent.childrenMatricules.length; i++) {
+                const studentRelationId = `${parent.childrenMatricules[i]}_${communiqueId}`;
+                const studentRelationRef = doc(db, 'student_communique_relations', studentRelationId);
+                
+                await setDoc(studentRelationRef, {
+                    studentId: parent.childrenMatricules[i],
+                    studentName: parent.childrenNames[i],
+                    studentClass: parent.childrenClasses[i],
+                    parentId: parent.matricule,
+                    parentName: parent.fullName,
+                    communiqueId: communiqueId,
+                    feeType: finalFeeType,
+                    amount: amount,
+                    month: month,
+                    deadline: deadline,
+                    status: 'pending',
+                    createdAt: serverTimestamp()
+                });
+            }
+        }
+        
+        showAlert(`Communiqué publié avec succès ! ${concernedParents.length} parent(s) concerné(s).`, 'success');
+        
+        // 5. Réinitialiser le formulaire
+        document.getElementById('communique-form').reset();
+        document.querySelectorAll('#communique-classes-container .class-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        // 6. Recharger les archives
+        loadCommuniqueArchives();
+        
+    } catch (error) {
+        console.error('Erreur publication communiqué:', error);
+        showAlert('Erreur lors de la publication: ' + error.message, 'error');
+    }
+});
+
+// Fonction pour trouver les parents concernés par les classes
+async function findParentsForClasses(classes) {
+    const concernedParents = [];
+    const parentMap = new Map(); // Pour éviter les doublons
+    
+    try {
+        // Rechercher dans les élèves secondaires
+        for (const className of classes) {
+            const studentsQuery = query(
+                collection(db, 'students'),
+                where('class', '==', className),
+                where('status', '==', 'active')
+            );
+            
+            const studentsSnap = await getDocs(studentsQuery);
+            
+            for (const studentDoc of studentsSnap.docs) {
+                const studentData = studentDoc.data();
+                
+                if (studentData.parentId) {
+                    if (!parentMap.has(studentData.parentId)) {
+                        // Récupérer les informations du parent
+                        const parentDoc = await getDoc(doc(db, 'parents', studentData.parentId));
+                        
+                        if (parentDoc.exists()) {
+                            const parentData = parentDoc.data();
+                            parentMap.set(studentData.parentId, {
+                                matricule: studentData.parentId,
+                                fullName: parentData.fullName || 'Parent inconnu',
+                                childrenMatricules: [studentData.matricule],
+                                childrenNames: [studentData.fullName],
+                                childrenClasses: [studentData.class]
+                            });
+                        }
+                    } else {
+                        // Ajouter l'enfant supplémentaire au parent existant
+                        const parent = parentMap.get(studentData.parentId);
+                        parent.childrenMatricules.push(studentData.matricule);
+                        parent.childrenNames.push(studentData.fullName);
+                        parent.childrenClasses.push(studentData.class);
+                    }
+                }
+            }
+        }
+        
+        // Rechercher dans les élèves primaires
+        for (const className of classes) {
+            const studentsQuery = query(
+                collection(db, 'primary_students'),
+                where('class', '==', className),
+                where('status', '==', 'active')
+            );
+            
+            const studentsSnap = await getDocs(studentsQuery);
+            
+            for (const studentDoc of studentsSnap.docs) {
+                const studentData = studentDoc.data();
+                
+                if (studentData.parentId) {
+                    if (!parentMap.has(studentData.parentId)) {
+                        const parentDoc = await getDoc(doc(db, 'parents', studentData.parentId));
+                        
+                        if (parentDoc.exists()) {
+                            const parentData = parentDoc.data();
+                            parentMap.set(studentData.parentId, {
+                                matricule: studentData.parentId,
+                                fullName: parentData.fullName || 'Parent inconnu',
+                                childrenMatricules: [studentData.matricule],
+                                childrenNames: [studentData.fullName],
+                                childrenClasses: [studentData.class]
+                            });
+                        }
+                    } else {
+                        const parent = parentMap.get(studentData.parentId);
+                        parent.childrenMatricules.push(studentData.matricule);
+                        parent.childrenNames.push(studentData.fullName);
+                        parent.childrenClasses.push(studentData.class);
+                    }
+                }
+            }
+        }
+        
+        // Rechercher dans les élèves maternelles
+        for (const className of classes) {
+            const studentsQuery = query(
+                collection(db, 'kindergarten_students'),
+                where('class', '==', className),
+                where('status', '==', 'active')
+            );
+            
+            const studentsSnap = await getDocs(studentsQuery);
+            
+            for (const studentDoc of studentsSnap.docs) {
+                const studentData = studentDoc.data();
+                
+                if (studentData.parentId) {
+                    if (!parentMap.has(studentData.parentId)) {
+                        const parentDoc = await getDoc(doc(db, 'parents', studentData.parentId));
+                        
+                        if (parentDoc.exists()) {
+                            const parentData = parentDoc.data();
+                            parentMap.set(studentData.parentId, {
+                                matricule: studentData.parentId,
+                                fullName: parentData.fullName || 'Parent inconnu',
+                                childrenMatricules: [studentData.matricule],
+                                childrenNames: [studentData.fullName],
+                                childrenClasses: [studentData.class]
+                            });
+                        }
+                    } else {
+                        const parent = parentMap.get(studentData.parentId);
+                        parent.childrenMatricules.push(studentData.matricule);
+                        parent.childrenNames.push(studentData.fullName);
+                        parent.childrenClasses.push(studentData.class);
+                    }
+                }
+            }
+        }
+        
+        // Convertir la Map en Array
+        parentMap.forEach(parent => {
+            concernedParents.push(parent);
+        });
+        
+    } catch (error) {
+        console.error('Erreur recherche parents:', error);
+    }
+    
+    return concernedParents;
+}
 
         // 17. ENVOYER LE COMMUNIQUÉ AUX PARENTS
         async function sendCommuniqueToParents(communiqueData, unpaidStudents) {

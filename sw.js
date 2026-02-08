@@ -8,8 +8,8 @@ const urlsToCache = [
   'index.html',
   'manifest.json',
   'icon-72x72.png',
-  '/icon-192x192.png',
-  '/icon-512x512.png',
+  'icon-192x192.png',
+  'icon-512x512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
   'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js',
   'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js'
@@ -239,8 +239,8 @@ function showBackgroundNotification(notificationData) {
   
   const options = {
     body: body,
-    icon: '/icon-192x192.png',
-    badge: '/icon-72x72.png',
+    icon: 'icon-192x192.png',
+    badge: 'icon-72x72.png',
     vibrate: [200, 100, 200],
     data: data || {},
     requireInteraction: true,
@@ -432,7 +432,7 @@ self.addEventListener('fetch', (event) => {
           .catch(() => {
             // Fallback pour les images
             if (request.destination === 'image') {
-              return caches.match('/icon-192x192.png');
+              return caches.match('icon-192x192.png');
             }
             return new Response('Ressource non disponible hors ligne', {
               status: 503,

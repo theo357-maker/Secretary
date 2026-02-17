@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Espace secretary - hybrilink</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
@@ -22,9 +22,8 @@
 
 <!-- Service Worker et mise à jour -->
    
-    <meta name="version" content="2.1.0">
+  <meta name="version" content="2.1.0">
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-
 
   <!-- Apple Touch Icons -->
   <link rel="apple-touch-icon" href="icon-192x192.png">
@@ -44,1362 +43,342 @@
 <!-- Scripts de mise à jour -->
 <script src="update-system.js"></script>
     <style>
-      :root {
-    --primary: #3498db; --secondary: #2c3e50; --success: #27ae60;
-    --danger: #e74c3c; --warning: #f39c12; --info: #1abc9c;
-    --light: #ecf0f1; --dark: #34495e;
-    --sidebar-width: 250px;
-    --sidebar-collapsed-width: 0;
-    --header-height: 70px;
-    --border-radius: 8px;
-    --box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-}
-
-* { 
-    margin: 0; 
-    padding: 0; 
-    box-sizing: border-box; 
-}
-
-body { 
-    font-family: 'Segoe UI', sans-serif; 
-    background-color: #f5f6fa;
-    overflow-x: hidden;
-    width: 100%;
-    -webkit-text-size-adjust: 100%; /* Empêche le zoom automatique du texte sur iOS */
-    -moz-text-size-adjust: 100%;
-    -ms-text-size-adjust: 100%;
-    text-size-adjust: 100%;
-}
-
-/* --- Écran de démarrage --- */
-.splash-screen { 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    display: flex; 
-    flex-direction: column; 
-    justify-content: center; 
-    align-items: center; 
-    z-index: 3000;
-    color: white;
-    padding: 20px;
-}
-
-.splash-logo { 
-    width: min(150px, 30vw); 
-    height: min(150px, 30vw); 
-    margin-bottom: 2rem;
-    background: white;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-}
-
-.splash-logo i, 
-.splash-logo img { 
-    font-size: 4rem; 
-    max-width: 80%;
-    max-height: 80%;
-    color: var(--primary);
-}
-
-.splash-text { 
-    text-align: center; 
-    margin-bottom: 2rem;
-    width: 100%;
-    max-width: 600px;
-}
-
-.splash-text h1 { 
-    font-size: clamp(1.8rem, 6vw, 2.5rem); 
-    margin-bottom: 0.5rem;
-    font-weight: 700;
-    line-height: 1.2;
-}
-
-.splash-text p { 
-    font-size: clamp(1rem, 4vw, 1.2rem); 
-    opacity: 0.9;
-}
-
-.loading-spinner {
-    width: 50px;
-    height: 50px;
-    border: 5px solid rgba(255,255,255,0.3);
-    border-top: 5px solid white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* --- Styles Communs --- */
-.login-overlay { 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    background: rgba(0,0,0,0.7); 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    z-index: 2000; 
-    padding: 20px;
-}
-
-.login-card { 
-    background: white; 
-    padding: clamp(1.5rem, 5vw, 3rem); 
-    border-radius: 10px; 
-    width: 100%; 
-    max-width: 400px; 
-    text-align: center; 
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3); 
-}
-
-.hidden { 
-    display: none !important; 
-}
-
-/* --- Structure principale --- */
-.app-container { 
-    display: flex; 
-    min-height: 100vh; 
-    width: 100%;
-    position: relative;
-}
-
-/* --- Sidebar --- */
-.sidebar { 
-    width: var(--sidebar-width); 
-    background: white; 
-    box-shadow: 2px 0 10px rgba(0,0,0,0.08); 
-    flex-shrink: 0; 
-    transition: transform 0.3s ease, width 0.3s ease;
-    height: 100vh;
-    position: sticky;
-    top: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.sidebar.collapsed { 
-    transform: translateX(calc(-1 * var(--sidebar-width))); 
-}
-
-/* --- Navigation --- */
-.nav-menu { 
-    list-style: none; 
-    padding: 1rem 0; 
-    margin: 0; 
-}
-
-.nav-menu li a { 
-    display: flex; 
-    align-items: center; 
-    gap: 12px; 
-    padding: 14px 20px; 
-    color: var(--dark); 
-    text-decoration: none; 
-    font-weight: 500;
-    transition: background 0.2s ease;
-    word-break: break-word;
-}
-
-.nav-menu li a i {
-    min-width: 20px;
-    text-align: center;
-}
-
-.nav-menu li a.active, 
-.nav-menu li a:hover { 
-    background: #eaf5fc; 
-    color: var(--primary); 
-}
-
-.nav-submenu { 
-    list-style: none; 
-    padding-left: 2rem; 
-}
-
-.nav-submenu li a { 
-    padding: 10px 20px; 
-    font-size: 0.9rem; 
-}
-
-.nav-menu .has-submenu > a::after { 
-    content: '\f078'; 
-    font-family: 'Font Awesome 5 Free'; 
-    font-weight: 900; 
-    margin-left: auto; 
-    transition: transform 0.3s; 
-}
-
-.nav-menu .has-submenu.active > a::after { 
-    transform: rotate(180deg); 
-}
-
-.nav-submenu { 
-    display: none; 
-}
-
-.nav-menu .has-submenu.active .nav-submenu { 
-    display: block; 
-}
-
-/* --- Contenu principal --- */
-.main-content { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    min-width: 0; /* Important pour le flex */
-    width: 100%;
-}
-
-/* --- En-tête --- */
-.app-header { 
-    background: white; 
-    padding: 1rem clamp(1rem, 3vw, 2rem); 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    border-bottom: 1px solid #eee;
-    flex-wrap: wrap;
-    gap: 10px;
-    min-height: var(--header-height);
-}
-
-.app-header h2 {
-    font-size: clamp(1.2rem, 4vw, 1.5rem);
-    margin-right: 10px;
-    word-break: break-word;
-}
-
-/* --- Bouton menu mobile --- */
-.menu-toggle { 
-    display: none; 
-    background: none; 
-    border: none; 
-    font-size: 1.5rem; 
-    cursor: pointer; 
-    color: var(--dark); 
-    padding: 8px;
-    border-radius: 5px;
-}
-
-.menu-toggle:hover {
-    background-color: #f0f0f0;
-}
-
-/* --- Zone de contenu --- */
-.content-area { 
-    padding: clamp(1rem, 3vw, 2rem); 
-    flex: 1;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
-}
-
-/* --- Pages --- */
-.page { 
-    display: none; 
-    width: 100%;
-}
-
-.page.active { 
-    display: block; 
-}
-
-/* --- Boutons --- */
-.btn { 
-    padding: 10px 20px; 
-    border: none; 
-    border-radius: 5px; 
-    cursor: pointer; 
-    font-weight: 500; 
-    color: white; 
-    transition: opacity 0.2s, transform 0.1s;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    white-space: nowrap;
-}
-
-.btn:active {
-    transform: scale(0.98);
-}
-
-.btn-primary { background: var(--primary); }
-.btn-success { background: var(--success); }
-.btn-danger { background: var(--danger); }
-.btn-warning { background: var(--warning); }
-.btn-info { background: var(--info); }
-
-.btn-sm {
-    padding: 6px 12px;
-    font-size: 0.85rem;
-}
-
-/* --- Formulaires --- */
-.form-control { 
-    width: 100%; 
-    padding: 10px; 
-    border: 1px solid #ddd; 
-    border-radius: 5px; 
-    box-sizing: border-box; 
-    font-size: 16px; /* Empêche le zoom automatique sur iOS */
-}
-
-.form-group { 
-    margin-bottom: 1rem; 
-}
-
-.form-group label { 
-    display: block; 
-    margin-bottom: 5px; 
-    font-weight: 500; 
-}
-
-.form-row { 
-    display: flex; 
-    gap: 1rem; 
-    flex-wrap: wrap;
-}
-
-.form-row > * {
-    flex: 1 1 200px;
-    min-width: 0;
-}
-
-/* --- Cartes --- */
-.card { 
-    background: white; 
-    padding: clamp(1rem, 3vw, 1.5rem); 
-    border-radius: 8px; 
-    box-shadow: var(--box-shadow); 
-    margin-bottom: 1.5rem; 
-    width: 100%;
-    overflow-x: auto;
-}
-
-/* --- Alertes --- */
-.alert { 
-    padding: 1rem; 
-    border-radius: 5px; 
-    margin-bottom: 1rem; 
-    word-break: break-word;
-}
-
-.alert-success { background: #d4edda; color: #155724; }
-.alert-error { background: #f8d7da; color: #721c24; }
-.alert-info { background: #d1ecf1; color: #0c5460; }
-
-/* --- Tableaux --- */
-.table-container { 
-    overflow-x: auto; 
-    margin: 1rem 0;
-    width: 100%;
-    -webkit-overflow-scrolling: touch;
-}
-
-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    min-width: 600px; /* Force le scroll horizontal si nécessaire */
-}
-
-th, td { 
-    padding: 12px 15px; 
-    text-align: left; 
-    border-bottom: 1px solid #eee; 
-    word-break: break-word;
-}
-
-th { 
-    background-color: #f8f9fa; 
-    font-weight: 600; 
-}
-
-tr:hover { 
-    background-color: #f8f9fa; 
-}
-
-/* --- Badges --- */
-.badge { 
-    display: inline-block; 
-    padding: 4px 8px; 
-    border-radius: 4px; 
-    font-size: 0.8rem; 
-    font-weight: 500; 
-    white-space: nowrap;
-}
-
-.badge-success { background-color: var(--success); color: white; }
-.badge-warning { background-color: var(--warning); color: white; }
-.badge-danger { background-color: var(--danger); color: white; }
-.badge-info { background-color: var(--info); color: white; }
-.badge-secondary { background-color: var(--secondary); color: white; }
-
-/* --- Recherche --- */
-.search-box { 
-    margin-bottom: 1.5rem; 
-}
-
-.search-box input { 
-    width: 100%; 
-    max-width: 100%; 
-}
-
-/* --- Actions --- */
-.action-buttons { 
-    display: flex; 
-    gap: 0.5rem; 
-    flex-wrap: wrap;
-}
-
-.action-buttons button { 
-    padding: 6px 12px; 
-    font-size: 0.85rem; 
-    white-space: nowrap;
-}
-
-/* --- Grille de statistiques --- */
-.stats-grid { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); 
-    gap: 1.5rem; 
-    margin-bottom: 2rem; 
-}
-
-.stat-card { 
-    background: white; 
-    padding: 1.5rem; 
-    border-radius: 8px; 
-    box-shadow: var(--box-shadow); 
-    text-align: center; 
-    cursor: pointer; 
-    transition: transform 0.2s; 
-}
-
-.stat-card:hover { 
-    transform: translateY(-5px); 
-}
-
-.stat-card i { 
-    font-size: 2rem; 
-    margin-bottom: 0.5rem; 
-    color: var(--primary); 
-}
-
-.stat-card h3 { 
-    font-size: clamp(1.5rem, 5vw, 1.8rem); 
-    margin: 0.5rem 0; 
-}
-
-.stat-card p { 
-    color: #666; 
-    font-size: 0.9rem; 
-}
-
-/* --- Filtres --- */
-.filter-options { 
-    display: flex; 
-    gap: 1rem; 
-    margin-bottom: 1.5rem; 
-    flex-wrap: wrap; 
-}
-
-.filter-options select { 
-    min-width: 150px; 
-    flex: 1 1 auto;
-}
-
-/* --- Modals --- */
-.modal { 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    background: rgba(0,0,0,0.7); 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    z-index: 1000; 
-    padding: 20px;
-}
-
-.modal-content { 
-    background: white; 
-    padding: clamp(1rem, 4vw, 2rem); 
-    border-radius: 10px; 
-    width: 100%; 
-    max-width: min(600px, 95%);
-    max-height: 90vh; 
-    overflow-y: auto; 
-    -webkit-overflow-scrolling: touch;
-}
-
-.modal-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 1.5rem; 
-    gap: 10px;
-}
-
-.close-modal { 
-    background: none; 
-    border: none; 
-    font-size: 1.5rem; 
-    cursor: pointer; 
-    color: #666;
-    padding: 5px;
-}
-
-.close-modal:hover {
-    color: var(--danger);
-}
-
-/* --- Onglets --- */
-.tabs { 
-    display: flex; 
-    border-bottom: 1px solid #ddd; 
-    margin-bottom: 1.5rem; 
-    flex-wrap: wrap;
-}
-
-.tab { 
-    padding: 10px 20px; 
-    cursor: pointer; 
-    border-bottom: 2px solid transparent; 
-    white-space: nowrap;
-}
-
-.tab.active { 
-    border-bottom: 2px solid var(--primary); 
-    color: var(--primary); 
-    font-weight: 500; 
-}
-
-.tab-content { 
-    display: none; 
-}
-
-.tab-content.active { 
-    display: block; 
-}
-
-/* --- Détails étudiant --- */
-.student-details { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); 
-    gap: 1rem; 
-}
-
-.detail-item { 
-    margin-bottom: 1rem; 
-}
-
-.detail-item label { 
-    font-weight: 600; 
-    color: #666; 
-    display: block;
-    margin-bottom: 3px;
-}
-
-.detail-item p { 
-    margin-top: 0.25rem; 
-    word-break: break-word;
-}
-
-/* --- Upload photo --- */
-.photo-upload { 
-    text-align: center; 
-    margin: 1rem 0; 
-}
-
-.photo-preview { 
-    width: 120px; 
-    height: 120px; 
-    border-radius: 50%; 
-    object-fit: cover; 
-    border: 3px solid var(--primary); 
-    margin: 0 auto 1rem; 
-    display: block; 
-}
-
-.photo-placeholder { 
-    width: 120px; 
-    height: 120px; 
-    border-radius: 50%; 
-    background: #eee; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    margin: 0 auto 1rem; 
-    color: #999; 
-}
-
-.file-input { 
-    display: none; 
-}
-
-.upload-btn { 
-    background: var(--info); 
-    color: white; 
-    border: none; 
-    padding: 8px 16px; 
-    border-radius: 5px; 
-    cursor: pointer; 
-}
-
-/* --- Classes enseignants --- */
-.teacher-classes { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); 
-    gap: 1rem; 
-    margin-top: 1rem; 
-}
-
-.class-checkbox { 
-    display: flex; 
-    align-items: center; 
-    gap: 0.5rem; 
-    word-break: break-word;
-}
-
-/* --- Profil secrétaire --- */
-.secretary-profile { 
-    display: flex; 
-    align-items: center; 
-    gap: 0.5rem; 
-}
-
-.secretary-photo { 
-    width: 40px; 
-    height: 40px; 
-    border-radius: 50%; 
-    object-fit: cover; 
-    border: 2px solid var(--primary); 
-}
-
-.secretary-photo-placeholder { 
-    width: 40px; 
-    height: 40px; 
-    border-radius: 50%; 
-    background: #eee; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    color: #999; 
-}
-
-/* --- Reçu --- */
-.receipt { 
-    max-width: 100%; 
-    margin: 0 auto; 
-    background: white; 
-    padding: clamp(1rem, 4vw, 2rem); 
-    border: 1px solid #ddd; 
-    font-family: Arial, sans-serif; 
-}
-
-.receipt-header { 
-    text-align: center; 
-    margin-bottom: 2rem; 
-    border-bottom: 2px solid var(--primary); 
-    padding-bottom: 1rem; 
-}
-
-.receipt-logo { 
-    max-width: min(150px, 80%); 
-    margin: 0 auto 1rem; 
-}
-
-.receipt-logo img {
-    max-width: 100%;
-    height: auto;
-}
-
-.receipt-title { 
-    font-size: clamp(1.2rem, 4vw, 1.5rem); 
-    font-weight: bold; 
-    margin-bottom: 0.5rem; 
-    color: var(--primary); 
-}
-
-.receipt-details { 
-    margin-bottom: 2rem; 
-}
-
-.receipt-row { 
-    display: flex; 
-    justify-content: space-between; 
-    margin-bottom: 0.5rem; 
-    flex-wrap: wrap;
-    gap: 5px;
-}
-
-.receipt-divider { 
-    border-top: 1px solid #ddd; 
-    margin: 1rem 0; 
-}
-
-.receipt-footer { 
-    text-align: center; 
-    margin-top: 2rem; 
-    font-size: 0.9rem; 
-    color: #666; 
-    border-top: 1px solid #eee; 
-    padding-top: 1rem; 
-}
-
-/* --- Gestion des frais --- */
-.fees-controls { 
-    display: flex; 
-    gap: 1rem; 
-    margin-bottom: 1.5rem; 
-    flex-wrap: wrap; 
-}
-
-.fees-controls select, 
-.fees-controls input { 
-    min-width: min(150px, 100%); 
-    flex: 1 1 auto;
-}
-
-.fees-summary { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); 
-    gap: 1rem; 
-    margin-bottom: 1.5rem; 
-}
-
-.fees-summary-card { 
-    background: white; 
-    padding: 1rem; 
-    border-radius: 8px; 
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-    text-align: center; 
-}
-
-.fees-summary-card h4 { 
-    margin-bottom: 0.5rem; 
-    color: var(--dark); 
-    font-size: clamp(0.9rem, 3vw, 1rem);
-}
-
-.fees-summary-card p { 
-    font-size: clamp(1.2rem, 4vw, 1.5rem); 
-    font-weight: bold; 
-    color: var(--primary); 
-    word-break: break-word;
-}
-
-/* --- Admin --- */
-.admin-controls { 
-    display: flex; 
-    gap: 1rem; 
-    margin-bottom: 1.5rem; 
-    flex-wrap: wrap; 
-}
-
-.report-controls.hidden {
-    display: none;
-}
-
-.report-card { 
-    background: white; 
-    padding: clamp(1rem, 3vw, 1.5rem); 
-    border-radius: 8px; 
-    box-shadow: var(--box-shadow); 
-    margin-bottom: 1.5rem; 
-    overflow-x: auto;
-}
-
-.report-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 1rem; 
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.report-summary { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr)); 
-    gap: 1rem; 
-    margin-bottom: 1.5rem; 
-}
-
-/* --- Signature --- */
-.signature-area { 
-    margin-top: 3rem; 
-    display: flex; 
-    justify-content: space-between; 
-    flex-wrap: wrap;
-    gap: 20px;
-}
-
-.signature-box { 
-    text-align: center; 
-    width: min(45%, 300px); 
-    min-width: 200px;
-}
-
-.signature-line { 
-    border-top: 1px solid #000; 
-    margin-top: 3rem; 
-}
-
-/* --- Devises --- */
-.currency-display { 
-    font-weight: bold; 
-    color: var(--success); 
-    white-space: nowrap;
-}
-
-.currency-input-group { 
-    position: relative; 
-    display: flex;
-    align-items: center;
-}
-
-.currency-symbol { 
-    position: absolute; 
-    left: 10px; 
-    top: 50%; 
-    transform: translateY(-50%); 
-    color: #666; 
-    font-weight: bold; 
-    pointer-events: none;
-}
-
-.currency-input { 
-    padding-left: 25px; 
-    width: 100%;
-}
-
-/* --- Mois multiples --- */
-.months-container { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(min(100px, 100%), 1fr)); 
-    gap: 0.5rem; 
-    margin: 1rem 0; 
-}
-
-.month-checkbox { 
-    display: flex; 
-    align-items: center; 
-    gap: 0.5rem; 
-}
-
-.month-checkbox label {
-    word-break: break-word;
-}
-
-/* --- Statut de connexion --- */
-.connection-status { 
-    display: flex; 
-    align-items: center; 
-    gap: 0.5rem; 
-    padding: 0.5rem 1rem; 
-    border-radius: 20px; 
-    font-size: 0.8rem; 
-    white-space: nowrap;
-}
-
-.connection-status.online { background: #d4edda; color: #155724; }
-.connection-status.offline { background: #f8d7da; color: #721c24; }
-
-.status-indicator { 
-    width: 10px; 
-    height: 10px; 
-    border-radius: 50%; 
-    display: inline-block;
-}
-
-.status-online { background: var(--success); }
-.status-offline { background: var(--danger); }
-
-/* --- Bouton d'installation PWA --- */
-.install-btn { 
-    background: var(--info); 
-    color: white; 
-    border: none; 
-    padding: 8px 16px; 
-    border-radius: 5px; 
-    cursor: pointer; 
-    white-space: nowrap;
-}
-
-/* --- Recherche/modification --- */
-.search-modify-container { 
-    background: white; 
-    padding: clamp(1rem, 3vw, 1.5rem); 
-    border-radius: 8px; 
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-/* --- Statistiques par classe --- */
-.class-stats-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.class-stat-card {
-    background: white;
-    padding: clamp(1rem, 3vw, 1.5rem);
-    border-radius: 8px;
-    box-shadow: var(--box-shadow);
-    width: 100%;
-    overflow: hidden;
-}
-
-.class-stat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #eee;
-    flex-wrap: wrap;
-    gap: 5px;
-}
-
-.class-students-list {
-    margin-top: 1rem;
-    max-height: 200px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.class-student-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem;
-    border-bottom: 1px solid #f5f5f5;
-    flex-wrap: wrap;
-    gap: 5px;
-}
-
-.class-student-item:last-child {
-    border-bottom: none;
-}
-
-/* --- Bouton retour --- */
-.back-btn {
-    font-size: 20px;
-    width: 100%;
-    text-align: left;
-    padding: 14px 20px;
-    background: none;
-    border: none;
-    color: var(--dark);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.back-btn:hover {
-    background: #eaf5fc;
-    color: var(--primary);
-}
-
-/* --- Notifications de mise à jour --- */
-.update-toast {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: white;
-    border-left: 4px solid #3498db;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    padding: 15px 20px;
-    min-width: min(300px, 90%);
-    max-width: 400px;
-    z-index: 9999;
-    transform: translateX(120%);
-    transition: transform 0.3s ease;
-}
-
-.update-toast.show {
-    transform: translateX(0);
-}
-
-.update-toast.success { border-left-color: #27ae60; }
-.update-toast.warning { border-left-color: #f39c12; }
-.update-toast.danger { border-left-color: #e74c3c; }
-.update-toast.info { border-left-color: #3498db; }
-
-/* --- MEDIA QUERIES PRINCIPALES --- */
-
-/* Tablettes (max-width: 1024px) */
-@media (max-width: 1024px) {
-    .sidebar {
-        width: 220px;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    }
-    
-    .class-stats-container {
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    }
-}
-
-/* Mobiles (max-width: 768px) */
-@media (max-width: 768px) {
-    :root {
-        --sidebar-width: 85%;
-    }
-    
-    .menu-toggle { 
-        display: block; 
-    }
-    
-    .sidebar { 
-        position: fixed; 
-        z-index: 1000; 
-        height: 100vh; 
-        width: var(--sidebar-width);
-        max-width: 300px;
-        box-shadow: 2px 0 20px rgba(0,0,0,0.15);
-    }
-    
-    .sidebar.collapsed { 
-        transform: translateX(-100%); 
-    }
-    
-    .main-content { 
-        margin-left: 0; 
-        width: 100%;
-    }
-    
-    .app-header {
-        padding: 0.75rem 1rem;
-    }
-    
-    .app-header > div {
-        gap: 0.5rem;
-    }
-    
-    .connection-status, 
-    .install-btn { 
-        display: none; 
-    }
-    
-    .secretary-profile span {
-        display: none;
-    }
-    
-    .form-row { 
-        flex-direction: column; 
-        gap: 0.5rem;
-    }
-    
-    .form-row > * {
-        flex: 1 1 auto;
-        width: 100%;
-    }
-    
-    .fees-controls, 
-    .admin-controls { 
-        flex-direction: column; 
-        gap: 0.5rem;
-    }
-    
-    .fees-controls select,
-    .fees-controls input,
-    .admin-controls select,
-    .admin-controls input {
-        width: 100%;
-        min-width: 100%;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .class-stats-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .fees-summary {
-        grid-template-columns: 1fr;
-    }
-    
-    .report-summary {
-        grid-template-columns: 1fr;
-    }
-    
-    .student-details {
-        grid-template-columns: 1fr;
-    }
-    
-    .teacher-classes {
-        grid-template-columns: 1fr;
-    }
-    
-    .months-container {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .modal-content {
-        padding: 1rem;
-        max-height: 95vh;
-    }
-    
-    .action-buttons {
-        flex-direction: column;
-    }
-    
-    .action-buttons button {
-        width: 100%;
-    }
-    
-    .tabs {
-        flex-wrap: wrap;
-    }
-    
-    .tab {
-        flex: 1 1 auto;
-        text-align: center;
-        padding: 10px;
-        font-size: 0.9rem;
-    }
-    
-    table {
-        min-width: 100%;
-    }
-    
-    th, td {
-        padding: 8px 10px;
-        font-size: 0.9rem;
-    }
-    
-    .receipt-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 2px;
-    }
-    
-    .signature-area {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .signature-box {
-        width: 100%;
-    }
-    
-    .class-student-item {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-}
-
-/* Petits mobiles (max-width: 480px) */
-@media (max-width: 480px) {
-    .app-header {
-        flex-wrap: wrap;
-        padding: 0.5rem;
-    }
-    
-    .app-header h2 {
-        order: 1;
-        width: 100%;
-        text-align: center;
-    }
-    
-    .app-header > div {
-        order: 2;
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .menu-toggle {
-        order: 0;
-    }
-    
-    .btn {
-        padding: 8px 16px;
-        font-size: 0.9rem;
-    }
-    
-    .content-area {
-        padding: 0.75rem;
-    }
-    
-    .card {
-        padding: 0.75rem;
-    }
-    
-    .months-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .photo-preview,
-    .photo-placeholder {
-        width: 100px;
-        height: 100px;
-    }
-    
-    .secretary-photo,
-    .secretary-photo-placeholder {
-        width: 35px;
-        height: 35px;
-    }
-    
-    .modal-content {
-        padding: 0.75rem;
-    }
-    
-    .class-stat-card {
-        padding: 0.75rem;
-    }
-    
-    .badge {
-        font-size: 0.7rem;
-        padding: 3px 6px;
-    }
-}
-
-/* --- Corrections pour les impressions --- */
-@media print {
-    .no-print,
-    .btn,
-    .menu-toggle,
-    .install-btn,
-    .connection-status,
-    .modal,
-    .update-toast,
-    .action-buttons {
-        display: none !important;
-    }
-    
-    body {
-        background: white;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .app-container {
-        display: block;
-    }
-    
-    .sidebar {
-        display: none;
-    }
-    
-    .main-content {
-        margin: 0;
-        padding: 0;
-    }
-    
-    .content-area {
-        padding: 10px;
-    }
-    
-    .card {
-        box-shadow: none;
-        border: 1px solid #ddd;
-        padding: 10px;
-        margin: 10px 0;
-    }
-    
-    table {
-        page-break-inside: auto;
-    }
-    
-    tr {
-        page-break-inside: avoid;
-        page-break-after: auto;
-    }
-    
-    thead {
-        display: table-header-group;
-    }
-    
-    tfoot {
-        display: table-footer-group;
-    }
-}
-
-/* --- Accessibilité et améliorations --- */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
-/* --- Support des écrans très larges --- */
-@media (min-width: 1600px) {
-    .content-area {
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-    
-    .class-stats-container {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-/* --- Corrections pour iOS --- */
-@supports (-webkit-touch-callout: none) {
-    .sidebar,
-    .modal-content,
-    .class-students-list {
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    input, 
-    select, 
-    textarea {
-        font-size: 16px; /* Empêche le zoom sur iOS */
-    }
-    
-    .btn {
-        -webkit-appearance: none;
-    }
-}
-
-/* --- Loading state --- */
-.loading { 
-    opacity: 0.6; 
-    pointer-events: none; 
-}
-
-/* --- Multi-select --- */
-.multi-select { 
-    height: 120px; 
-    width: 100%;
-}
+        :root {
+            --primary: #3498db; --secondary: #2c3e50; --success: #27ae60;
+            --danger: #e74c3c; --warning: #f39c12; --info: #1abc9c;
+            --light: #ecf0f1; --dark: #34495e;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f5f6fa; }
+        .hidden { display: none !important; }
+
+        /* --- Écran de démarrage --- */
+        .splash-screen { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 3000;
+            color: white;
+        }
+        .splash-logo { 
+            width: 150px; 
+            height: 150px; 
+            margin-bottom: 2rem;
+            background: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .splash-logo i { 
+            font-size: 4rem; 
+            color: var(--primary);
+        }
+        .splash-text { 
+            text-align: center; 
+            margin-bottom: 2rem;
+        }
+        .splash-text h1 { 
+            font-size: 2.5rem; 
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+        .splash-text p { 
+            font-size: 1.2rem; 
+            opacity: 0.9;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- Styles Communs --- */
+        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+        .login-card { background: white; padding: 3rem; border-radius: 10px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .app-container { display: flex; min-height: 100vh; }
+        .sidebar { width: 250px; background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.08); flex-shrink: 0; transition: transform 0.3s ease; }
+        .sidebar.collapsed { transform: translateX(-100%); }
+        .nav-menu { list-style: none; padding: 1rem 0; margin: 0; }
+        .nav-menu li a { display: flex; align-items: center; gap: 12px; padding: 14px 20px; color: var(--dark); text-decoration: none; font-weight: 500; }
+
+        /* Styles pour les notifications de mise à jour */
+        .update-toast {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: white;
+          border-left: 4px solid #3498db;
+          border-radius: 8px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+          padding: 15px 20px;
+          min-width: 300px;
+          max-width: 400px;
+          z-index: 9999;
+          transform: translateX(120%);
+          transition: transform 0.3s ease;
+        }
+
+        .update-toast.show {
+          transform: translateX(0);
+        }
+
+        .update-toast.success {
+          border-left-color: #27ae60;
+        }
+
+        .update-toast.warning {
+          border-left-color: #f39c12;
+        }
+
+        .update-toast.danger {
+          border-left-color: #e74c3c;
+        }
+
+        .update-toast.info {
+          border-left-color: #3498db;
+        }
+
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+          100% { transform: scale(1); }
+        }
+
+        .update-available {
+          animation: pulse 2s infinite;
+        }
+
+        .nav-menu li a.active, .nav-menu li a:hover { background: #eaf5fc; color: var(--primary); }
+        .nav-submenu { list-style: none; padding-left: 2rem; }
+        .nav-submenu li a { padding: 10px 20px; font-size: 0.9rem; }
+        .nav-menu .has-submenu > a::after { content: '\f078'; font-family: 'Font Awesome 5 Free'; font-weight: 900; margin-left: auto; transition: transform 0.3s; }
+        .nav-menu .has-submenu.active > a::after { transform: rotate(180deg); }
+        .nav-submenu { display: none; }
+        .nav-menu .has-submenu.active .nav-submenu { display: block; }
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .app-header { background: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+        .content-area { padding: 2rem; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 500; color: white; }
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-warning { background: var(--warning); }
+        .btn-info { background: var(--info); }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
+        .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+        .form-row { display: flex; gap: 1rem; }
+        .alert { padding: 1rem; border-radius: 5px; margin-bottom: 1rem; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+        .alert-info { background: #d1ecf1; color: #0c5460; }
+        
+        /* --- Styles améliorés --- */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        tr:hover { background-color: #f8f9fa; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 500; }
+        .badge-success { background-color: var(--success); color: white; }
+        .badge-warning { background-color: var(--warning); color: white; }
+        .badge-danger { background-color: var(--danger); color: white; }
+        .badge-info { background-color: var(--info); color: white; }
+        .badge-secondary { background-color: var(--secondary); color: white; }
+        .search-box { margin-bottom: 1.5rem; }
+        .search-box input { width: 100%; max-width: 400px; }
+        .action-buttons { display: flex; gap: 0.5rem; }
+        .action-buttons button { padding: 6px 12px; font-size: 0.85rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; cursor: pointer; transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card i { font-size: 2rem; margin-bottom: 0.5rem; color: var(--primary); }
+        .stat-card h3 { font-size: 1.8rem; margin: 0.5rem 0; }
+        .stat-card p { color: #666; font-size: 0.9rem; }
+        .filter-options { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .filter-options select { min-width: 150px; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 2rem; border-radius: 10px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .close-modal { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; }
+        .tabs { display: flex; border-bottom: 1px solid #ddd; margin-bottom: 1.5rem; }
+        .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab.active { border-bottom: 2px solid var(--primary); color: var(--primary); font-weight: 500; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .student-details { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
+        .detail-item { margin-bottom: 1rem; }
+        .detail-item label { font-weight: 600; color: #666; }
+        .detail-item p { margin-top: 0.25rem; }
+        .photo-upload { text-align: center; margin: 1rem 0; }
+        .photo-preview { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); margin: 0 auto 1rem; display: block; }
+        .photo-placeholder { width: 120px; height: 120px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: #999; }
+        .file-input { display: none; }
+        .upload-btn { background: var(--info); color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; }
+        .loading { opacity: 0.6; pointer-events: none; }
+        .multi-select { height: 120px; }
+        .teacher-classes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .class-checkbox { display: flex; align-items: center; gap: 0.5rem; }
+        
+        /* --- Styles pour la photo de profil du secrétaire --- */
+        .secretary-profile { display: flex; align-items: center; gap: 1rem; }
+        .secretary-photo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+        .secretary-photo-placeholder { width: 40px; height: 40px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; color: #999; }
+        
+        /* --- Styles pour le reçu --- */
+        .receipt { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border: 1px solid #ddd; font-family: Arial, sans-serif; }
+        .receipt-header { text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--primary); padding-bottom: 1rem; }
+        .receipt-logo { max-width: 150px; margin-bottom: 1rem; }
+        .receipt-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem; color: var(--primary); }
+        .receipt-details { margin-bottom: 2rem; }
+        .receipt-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+        .receipt-divider { border-top: 1px solid #ddd; margin: 1rem 0; }
+        .receipt-footer { text-align: center; margin-top: 2rem; font-size: 0.9rem; color: #666; border-top: 1px solid #eee; padding-top: 1rem; }
+        .code-validation { background: #f8f9fa; padding: 1rem; border-radius: 5px; margin: 1rem 0; text-align: center; border: 1px dashed #ddd; }
+        .code-validation h3 { color: var(--primary); margin-bottom: 0.5rem; }
+        .code-value { font-size: 1.5rem; font-weight: bold; letter-spacing: 2px; color: var(--success); background: white; padding: 0.5rem; border-radius: 4px; border: 1px solid #ddd; }
+        
+        /* --- Styles pour la gestion des frais --- */
+        .fees-controls { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .fees-controls select, .fees-controls input { min-width: 150px; }
+        .fees-summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .fees-summary-card { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; }
+        .fees-summary-card h4 { margin-bottom: 0.5rem; color: var(--dark); }
+        .fees-summary-card p { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+
+  .back-btn {
+   font-size: 20px;}
+        
+        /* --- Styles pour l'espace administratif --- */
+        .admin-controls { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .report-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+        .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .report-summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .signature-area { margin-top: 3rem; display: flex; justify-content: space-between; }
+        .signature-box { text-align: center; width: 45%; }
+        .signature-line { border-top: 1px solid #000; margin-top: 3rem; }
+
+        /* --- Styles pour les montants en dollars --- */
+        .currency-display { font-weight: bold; color: var(--success); }
+        .currency-input-group { position: relative; }
+        .currency-symbol { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #666; font-weight: bold; }
+        .currency-input { padding-left: 25px; }
+
+        /* --- Styles pour les mois multiples --- */
+        .months-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; margin: 1rem 0; }
+        .month-checkbox { display: flex; align-items: center; gap: 0.5rem; }
+        
+        /* --- Styles pour le bouton menu --- */
+        .menu-toggle { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--dark); }
+        
+        /* --- Styles pour le statut de connexion --- */
+        .connection-status { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+            padding: 0.5rem 1rem; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            margin-right: 1rem;
+        }
+        .connection-status.online { background: #d4edda; color: #155724; }
+        .connection-status.offline { background: #f8d7da; color: #721c24; }
+        .status-indicator { 
+            width: 10px; 
+            height: 10px; 
+            border-radius: 50%; 
+            display: inline-block;
+        }
+        .status-online { background: var(--success); }
+        .status-offline { background: var(--danger); }
+        
+        /* --- Styles pour le bouton d'installation PWA --- */
+        .install-btn { 
+            background: var(--info); 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin-right: 1rem;
+            display: none;
+        }
+        
+        /* --- Styles pour la recherche/modification --- */
+        .search-modify-container { 
+            background: white; 
+            padding: 1.5rem; 
+            border-radius: 8px; 
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .class-stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .class-stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        
+        .class-stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .class-students-list {
+            margin-top: 1rem;
+        }
+        
+        .class-student-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        
+        .class-student-item:last-child {
+            border-bottom: none;
+        }
+        
+        @media (max-width: 768px) {
+            .menu-toggle { display: block; }
+            .sidebar { position: fixed; z-index: 1000; height: 100%; }
+            .main-content { margin-left: 0; }
+            .connection-status, .install-btn { display: none; }
+            .form-row { flex-direction: column; }
+            .fees-controls, .admin-controls { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
@@ -5762,35 +4741,47 @@ document.getElementById('search-student-btn').addEventListener('click', async ()
             });
         }
         
-        if (students.length === 0) {
-            resultsContainer.innerHTML = '<p>Aucun élève trouvé</p>';
-            return;
-        }
-        
-        let html = '<div class="table-container"><table><thead><tr><th>Matricule</th><th>Nom</th><th>Type</th><th>Classe</th><th>Téléphone Parent</th><th>Actions</th></tr></thead><tbody>';
-        
-        students.forEach(student => {
-            const typeText = student.type === 'secondary' ? 'Secondaire' : 
-                           student.type === 'primary' ? 'Primaire' : 'Maternelle';
-            
-            html += `
-                <tr>
-                    <td>${student.matricule}</td>
-                    <td>${student.fullName}</td>
-                    <td>${typeText}</td>
-                    <td>${student.class}</td>
-                    <td>${student.parentPhone || ''}</td>
-                    <td class="action-buttons">
-                        <button class="btn btn-primary btn-sm" onclick="viewStudentDetails('${student.matricule}', '${student.type}')">Détails</button>
-                        <button class="btn btn-warning btn-sm" onclick="editStudent('${student.matricule}', '${student.type}')">Modifier</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteStudent('${student.matricule}', '${student.type}')">Supprimer</button>
-                    </td>
-                </tr>
-            `;
-        });
-        
-        html += '</tbody></table></div>';
-        resultsContainer.innerHTML = html;
+        // Remplacer la section des résultats de recherche dans la fonction search-student-btn
+// Recherchez cette partie dans le code (vers la ligne 8800 environ) :
+
+if (students.length === 0) {
+    resultsContainer.innerHTML = '<p>Aucun élève trouvé</p>';
+    return;
+}
+
+let html = '<div class="table-container"><table><thead><tr><th>Matricule</th><th>Nom</th><th>Type</th><th>Classe</th><th>Téléphone Parent</th><th>Actions</th></tr></thead><tbody>';
+
+students.forEach(student => {
+    const typeText = student.type === 'secondary' ? 'Secondaire' : 
+                   student.type === 'primary' ? 'Primaire' : 'Maternelle';
+    
+    html += `
+        <tr>
+            <td>${student.matricule}</td>
+            <td>${student.fullName}</td>
+            <td>${typeText}</td>
+            <td>${student.class}</td>
+            <td>${student.parentPhone || ''}</td>
+            <td class="action-buttons" style="min-width: 200px;">
+                <button class="btn btn-primary btn-sm" onclick="viewStudentDetails('${student.matricule}', '${student.type}')">
+                    <i class="fas fa-eye"></i> Détails
+                </button>
+                <button class="btn btn-warning btn-sm" onclick="editStudent('${student.matricule}', '${student.type}')">
+                    <i class="fas fa-edit"></i> Modifier
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteStudent('${student.matricule}', '${student.type}')">
+                    <i class="fas fa-trash"></i> Supprimer
+                </button>
+                <button class="btn btn-success btn-sm" onclick="printStudentCard('${student.matricule}', '${student.type}')">
+                    <i class="fas fa-id-card"></i> Carte
+                </button>
+            </td>
+        </tr>
+    `;
+});
+
+html += '</tbody></table></div>';
+resultsContainer.innerHTML = html;
         
     } catch (error) {
         console.error("Erreur recherche élève:", error);
@@ -7054,6 +6045,8 @@ setTimeout(() => {
                             ${reportContent}
                         </div>
                         <script>
+
+
                             window.onload = function() {
                                 window.print();
                                 setTimeout(function() {
@@ -7439,6 +6432,389 @@ await loadClassesForEditModal(studentType);
                 showAlert('Erreur: ' + error.message, 'error');
             }
         };
+
+// Ajoutez cette fonction après les fonctions d'export existantes
+
+// Fonction pour générer et imprimer la carte d'élève
+window.printStudentCard = async (studentMatricule, studentType) => {
+    try {
+        let docRef;
+        if (studentType === 'secondary') {
+            docRef = doc(db, 'students', studentMatricule);
+        } else if (studentType === 'primary') {
+            docRef = doc(db, 'primary_students', studentMatricule);
+        } else {
+            docRef = doc(db, 'kindergarten_students', studentMatricule);
+        }
+        
+        const studentSnap = await getDoc(docRef);
+        
+        if (!studentSnap.exists()) {
+            showAlert('Élève non trouvé.', 'error');
+            return;
+        }
+        
+        const data = studentSnap.data();
+        const studentTypeText = studentType === 'secondary' ? 'Secondaire' : 
+                              studentType === 'primary' ? 'Primaire' : 'Maternelle';
+        
+        // Récupérer l'année scolaire
+        const year = new Date().getFullYear();
+        const nextYear = year + 1;
+        
+        // Créer une nouvelle fenêtre pour l'impression
+        const printWindow = window.open('', '_blank');
+        
+        // HTML de la carte d'élève
+        const cardHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Carte d'Élève - ${data.fullName}</title>
+                <style>
+                    body {
+                        font-family: 'Arial', sans-serif;
+                        margin: 5;
+                        padding: 12px;
+                         background-color: #f0f0f0;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 80vh;
+                    }
+                    
+                    .student-card {
+                        width: 100mm; /* Format carte de crédit agrandi */
+                        height: 150mm;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        border-radius: 15px;
+                        padding: 20px;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                        position: relative;
+                        overflow: hidden;
+                        color: white;
+                        border: 2px solid gold;
+                    }
+                    
+                    /* Effet de fond */
+                    .student-card::before {
+                        content: '';
+                        position: absolute;
+                        top: -50%;
+                        right: -50%;
+                        width: 200%;
+                        height: 200%;
+                        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+                        transform: rotate(30deg);
+                    }
+                    
+                    /* En-tête avec deux photos */
+                    .card-header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 30px;
+                        position: relative;
+                        z-index: 2;
+                    }
+                    
+                    .header-photo {
+                        width: 50px;
+                        height: 50px;
+                        border-radius: 45%;
+                        overflow: hidden;
+                        border: 2px solid gold;
+                        background: white;
+                    }
+                    
+                    .header-photo img {
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
+                    }
+                    
+                    .header-photo.left {
+                        background: linear-gradient(135deg, #3498db, #2980b9);
+                    }
+                    
+                    .header-photo.right {
+                        background: linear-gradient(135deg, #e74c3c, #c0392b);
+                    }
+                    
+                    /* Photo principale au milieu */
+                    .main-photo-container {
+                        display: flex;
+                        justify-content: center;
+                        margin: 20px 0;
+                        position: relative;
+                        z-index: 2;
+                    }
+                    
+                    .main-photo {
+                        width: 100px;
+                        height: 100px;
+                        border-radius: 50%;
+                        overflow: hidden;
+                        border: 4px solid gold;
+                        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                        background: white;
+                    }
+                    
+                    .main-photo img {
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
+                    }
+                    
+                    /* Logo de l'école */
+                    .school-logo {
+                        text-align: center;
+                        margin: 10px 0;
+                        position: relative;
+                        z-index: 2;
+                    }
+                    
+                    .school-logo h3 {
+                        margin: 0;
+                        font-size: 16px;
+                        font-weight: bold;
+                        text-transform: uppercase;
+                        letter-spacing: 2px;
+                    }
+                    
+                    .school-logo p {
+                        margin: 5px 0 0;
+                        font-size: 12px;
+                        opacity: 0.9;
+                    }
+                    
+                    /* Informations de l'élève */
+                    .student-info {
+                        margin-top: 30px;
+                        position: relative;
+                        z-index: 2;
+                    }
+                    
+                    .info-row {
+                        display: flex;
+                        margin-bottom: 12px;
+                        border-bottom: 1px solid rgba(255,255,255,0.2);
+                        padding-bottom: 5px;
+                    }
+                    
+                    .info-label {
+                        width: 40%;
+                        font-size: 11px;
+                        font-weight: bold;
+                        text-transform: uppercase;
+                        opacity: 0.8;
+                    }
+                    
+                    .info-value {
+                        width: 60%;
+                        font-size: 12px;
+                        font-weight: 500;
+                    }
+                    
+                    /* Matricule en bas */
+                    .matricule-section {
+                        margin-top: 30px;
+                        text-align: center;
+                        position: relative;
+                        z-index: 2;
+                    }
+                    
+                    .matricule-label {
+                        font-size: 10px;
+                        opacity: 0.7;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                    }
+                    
+                    .matricule-number {
+                        font-size: 16px;
+                        font-weight: bold;
+                        letter-spacing: 2px;
+                        background: rgba(255,255,255,0.1);
+                        padding: 5px;
+                        border-radius: 5px;
+                        margin-top: 5px;
+                        font-family: 'Courier New', monospace;
+                    }
+                    
+                    /* Année scolaire */
+                    .school-year {
+                        margin-top: 15px;
+                        text-align: center;
+                        font-size: 10px;
+                        opacity: 0.6;
+                        text-transform: uppercase;
+                        position: relative;
+                        z-index: 2;
+                    }
+                    
+                    /* Signature */
+                    .signature {
+                        margin-top: 20px;
+                        display: flex;
+                        justify-content: space-between;
+                        font-size: 9px;
+                        position: relative;
+                        z-index: 2;
+                    }
+                    
+                    .signature-item {
+                        text-align: center;
+                    }
+                    
+                    .signature-line {
+                        width: 80px;
+                        height: 1px;
+                        background: rgba(255,255,255,0.3);
+                        margin-top: 5px;
+                    }
+                    
+                    /* Hologramme (effet) */
+                    .hologram {
+                        position: absolute;
+                        bottom: 20px;
+                        right: 20px;
+                        width: 30px;
+                        height: 30px;
+                        background: radial-gradient(circle, gold 0%, transparent 70%);
+                        border-radius: 50%;
+                        opacity: 0.5;
+                        z-index: 1;
+                    }
+                    
+                    @media print {
+                        body {
+                            background: white;
+                            padding: 0;
+                        }
+                        .student-card {
+                            box-shadow: none;
+                            border: 2px solid black;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="student-card">
+                    <!-- En-tête avec deux photos -->
+                    <div class="card-header">
+                        <div class="header-photo left">
+                            ${data.photoURL ? 
+                              `<img src="rd.png" alt="Photo gauche">` : 
+                              '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">👤</div>'}
+                        </div>
+                        <div class="header-photo right">
+                            ${data.photoURL ? 
+                              `<img src="cs.png" alt="Photo droite">` : 
+                              '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">👤</div>'}
+                        </div>
+                    </div>
+                    
+                    <!-- Logo de l'école -->
+                    <div class="school-logo">
+                        <h3>hybrilink</h3>
+                        <p>CARTE D'ÉLÈVE</p>
+                    </div>
+                    
+                    <!-- Photo principale au milieu -->
+                    <div class="main-photo-container">
+                        <div class="main-photo">
+                            ${data.photoURL ? 
+                              `<img src="${data.photoURL}" alt="Photo de ${data.fullName}">` : 
+                              '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#3498db;"><i class="fas fa-user" style="font-size:40px;color:white;"></i></div>'}
+                        </div>
+                    </div>
+                    
+                    <!-- Informations de l'élève -->
+                    <div class="student-info">
+                        <div class="info-row">
+                            <span class="info-label">Nom complet</span>
+                            <span class="info-value">${data.fullName}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="info-label">Date naissance</span>
+                            <span class="info-value">${data.birthdate}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="info-label">Lieu naissance</span>
+                            <span class="info-value">${data.birthplace || 'Non spécifié'}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="info-label">Classe</span>
+                            <span class="info-value">${data.class}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="info-label">Type</span>
+                            <span class="info-value">${studentTypeText}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="info-label">Parent</span>
+                            <span class="info-value">${data.parentName}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="info-label">Tél parent</span>
+                            <span class="info-value">${data.parentPhone}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Matricule -->
+                    <div class="matricule-section">
+                        <div class="matricule-label">Matricule</div>
+                        <div class="matricule-number">${data.matricule}</div>
+                    </div>
+                    
+                    <!-- Année scolaire -->
+                    <div class="school-year">
+                        Année Scolaire ${year}-${nextYear}
+                    </div>
+                    
+                    <!-- Signatures -->
+                    <div class="signature">
+                        <div class="signature-item">
+                            <div>Le Secrétaire</div>
+                            <div class="signature-line"></div>
+                        </div>
+                        <div class="signature-item">
+                            <div>Le Directeur</div>
+                            <div class="signature-line"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hologramme (effet visuel) -->
+                    <div class="hologram"></div>
+                </div>
+                
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        setTimeout(function() {
+                            window.close();
+                        }, 1000);
+                    }
+                <\/script>
+            </body>
+            </html>
+        `;
+        
+        printWindow.document.write(cardHTML);
+        printWindow.document.close();
+        
+    } catch (error) {
+        console.error("Erreur génération carte:", error);
+        showAlert("Erreur lors de la génération de la carte: " + error.message, "error");
+    }
+};
 
         window.editStudent = async (studentMatricule, studentType) => {
     try {
@@ -9199,3 +8575,5 @@ navigator.serviceWorker.addEventListener('controllerchange', () => {
 
 </body>
 </html>
+
+ 

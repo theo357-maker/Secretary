@@ -21,9 +21,9 @@
 
 
 <!-- Service Worker et mise à jour -->
-     <meta name="version" content="2.1.0">
+   
+  <meta name="version" content="2.1.0">
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-
 
   <!-- Apple Touch Icons -->
   <link rel="apple-touch-icon" href="icon-192x192.png">
@@ -1142,88 +1142,44 @@
                     </div>
                 </div>
 
-              <!-- Page: Valider Paiement (VERSION MODIFIÉE) -->
-<div id="validate-payment-page" class="page">
-    <div class="card">
-        <h4>Valider un paiement par code</h4>
-        <div class="form-group">
-            <label>Entrer le code de paiement</label>
-            <input type="text" id="payment-code-input" class="form-control" placeholder="PAY-XXXXXX">
-        </div>
-        <button id="find-payment-btn" class="btn btn-primary">Rechercher</button>
-    </div>
-    
-    <div id="payment-details-card" class="card hidden">
-        <h4>Détails de la transaction</h4>
-        <div id="edit-payment-form">
-            <div class="form-row">
-                <div class="form-group" style="flex: 2;">
-                    <label>Nom de l'élève</label>
-                    <input type="text" id="edit-payment-student-name" class="form-control" required>
-                </div>
-                <div class="form-group" style="flex: 1;">
-                    <label>Classe</label>
-                    <input type="text" id="edit-payment-student-class" class="form-control" required>
-                </div>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group" style="flex: 1;">
-                    <label>Type d'élève</label>
-                    <select id="edit-payment-student-type" class="form-control" required>
-                        <option value="secondary">Secondaire</option>
-                        <option value="primary">Primaire</option>
-                        <option value="kindergarten">Maternelle</option>
-                    </select>
-                </div>
-                <div class="form-group" style="flex: 2;">
-                    <label>Mois (séparés par des virgules)</label>
-                    <input type="text" id="edit-payment-months" class="form-control" placeholder="janvier, février, mars" required>
-                </div>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group" style="flex: 1;">
-                    <label>Type de frais</label>
-                    <select id="edit-payment-type" class="form-control" required>
-                        <option value="Frais scolaires">Frais scolaires</option>
-                        <option value="Frais de l'état">Frais de l'état</option>
-                        <option value="visite">visite</option>
-                        <option value="achat pull">achat pull</option>
-                        <option value="Autres">Autres</option>
-                    </select>
-                </div>
-                <div class="form-group" style="flex: 1;">
-                    <label>Montant total ($)</label>
-                    <div class="currency-input-group">
-                        <span class="currency-symbol">$</span>
-                        <input type="number" id="edit-payment-amount" class="form-control currency-input" step="0.01" min="0" required>
+                <!-- Page: Valider Paiement (CORRIGÉE) -->
+                <div id="validate-payment-page" class="page">
+                    <div class="card">
+                        <h4>Valider un paiement par code</h4>
+                        <div class="form-group">
+                            <label>Entrer le code de paiement</label>
+                            <input type="text" id="payment-code-input" class="form-control" placeholder="PAY-XXXXXX">
+                        </div>
+                        <button id="find-payment-btn" class="btn btn-primary">Rechercher</button>
                     </div>
-                </div>
-            </div>
-            
-            <input type="hidden" id="edit-payment-code">
-            
-            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                <button id="update-payment-btn" class="btn btn-success" style="flex: 1;">
-                    <i class="fas fa-check-circle"></i> Valider le Paiement
-                </button>
-                <button id="cancel-edit-payment-btn" class="btn btn-secondary" style="flex: 1;">
-                    <i class="fas fa-times"></i> Annuler
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Supprimer la section des paiements en attente -->
-    <!-- La section des paiements sur place reste inchangée -->
-    <div class="card">
-        <h4>Paiements sur place</h4>
-        <form id="onsite-payment-form">
-            <!-- ... reste du formulaire inchangé ... -->
-        </form>
-    </div>
-</div>
+                    <div id="payment-details-card" class="card hidden">
+                        <h4>Détails de la transaction</h4>
+                        <p><strong>Élève:</strong> <span id="payment-student-name"></span></p>
+                        <p><strong>Mois:</strong> <span id="payment-months"></span></p>
+                        <p><strong>Type de frais:</strong> <span id="payment-type"></span></p>
+                        <p><strong>Montant:</strong> <span id="payment-amount" class="currency-display"></span></p>
+                        <button id="confirm-payment-btn" class="btn btn-success" style="margin-top: 1rem;">Confirmer le Paiement</button>
+                    </div>
+                    
+                    <div class="card">
+                        <h4>Paiements en attente</h4>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Élève</th>
+                                        <th>Mois</th>
+                                        <th>Type</th>
+                                        <th>Montant</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pending-payments-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
                     <div class="card">
                         <h4>Paiements sur place</h4>
                         <form id="onsite-payment-form">
@@ -3841,411 +3797,316 @@ async function loadAllClassesForReports() {
         });
 
         // --- Validation Paiement (CORRIGÉ) ---
-let foundRequest = null;
-
-// Modifier la fonction de recherche pour récupérer les données sans validation
-document.getElementById('find-payment-btn').addEventListener('click', async () => {
-    const code = document.getElementById('payment-code-input').value;
-    if (!code) {
-        showAlert("Veuillez entrer un code de paiement", "error");
-        return;
-    }
-    
-    try {
-        const q = query(collection(db, 'payment_requests'), where('paymentCode', '==', code), where('status', '==', 'pending'));
-        const snap = await getDocs(q);
-
-        if (snap.empty) {
-            showAlert('Aucune demande de paiement en attente trouvée pour ce code.', 'error');
-            document.getElementById('payment-details-card').classList.add('hidden');
-            document.getElementById('edit-payment-form').classList.add('hidden');
-            return;
-        }
+        let foundRequest = null;
         
-        foundRequest = snap.docs[0];
-        const data = foundRequest.data();
-        
-        // Afficher les informations dans des champs modifiables
-        document.getElementById('edit-payment-student-name').value = data.studentName;
-        document.getElementById('edit-payment-student-class').value = data.studentClass || '';
-        document.getElementById('edit-payment-student-type').value = data.studentType || 'secondary';
-        document.getElementById('edit-payment-months').value = data.months.join(', ');
-        document.getElementById('edit-payment-type').value = data.paymentType || 'Frais scolaires';
-        document.getElementById('edit-payment-amount').value = data.amount.toFixed(2);
-        document.getElementById('edit-payment-code').value = data.paymentCode;
-        
-        document.getElementById('payment-details-card').classList.remove('hidden');
-        document.getElementById('edit-payment-form').classList.remove('hidden');
-        
-    } catch (error) {
-        showAlert('Erreur de recherche: ' + error.message, 'error');
-    }
-});
-
-document.getElementById('update-payment-btn').addEventListener('click', async () => {
-    if (!foundRequest) return;
-    
-    // Récupérer les valeurs modifiées
-    const updatedName = document.getElementById('edit-payment-student-name').value;
-    const updatedClass = document.getElementById('edit-payment-student-class').value;
-    const updatedType = document.getElementById('edit-payment-student-type').value;
-    const monthsString = document.getElementById('edit-payment-months').value;
-    const updatedPaymentType = document.getElementById('edit-payment-type').value;
-    const updatedAmount = parseFloat(document.getElementById('edit-payment-amount').value) || 0;
-    
-    // Convertir la chaîne de mois en tableau
-    const updatedMonths = monthsString.split(',').map(m => m.trim());
-    
-    try {
-        const batch = writeBatch(db);
-        
-        // Mettre à jour la demande de paiement
-        batch.update(doc(db, 'payment_requests', foundRequest.id), { 
-            studentName: updatedName,
-            studentClass: updatedClass,
-            studentType: updatedType,
-            months: updatedMonths,
-            paymentType: updatedPaymentType,
-            amount: updatedAmount,
-            status: 'paid',
-            validatedAt: serverTimestamp(),
-            validatedBy: currentSecretary.uid
-        });
-
-        // Créer les paiements individuels
-        updatedMonths.forEach(month => {
-            const paymentDocRef = doc(collection(db, 'payments'));
-            batch.set(paymentDocRef, {
-                studentId: foundRequest.data().studentId,
-                studentName: updatedName,
-                studentClass: updatedClass,
-                studentType: updatedType,
-                month: month,
-                paymentType: updatedPaymentType,
-                amount: updatedAmount / updatedMonths.length,
-                validatedBy: currentSecretary.uid,
-                validatedAt: serverTimestamp(),
-                createdAt: serverTimestamp(),
-                paymentMethod: 'online'
-            });
-        });
-
-        await batch.commit();
-        
-        // Générer le reçu
-        await generateReceipt(updatedName, updatedMonths, updatedAmount, foundRequest.data().paymentCode, updatedClass, updatedPaymentType);
-        
-        showAlert('Paiement validé avec succès !', 'success');
-        document.getElementById('payment-details-card').classList.add('hidden');
-        document.getElementById('edit-payment-form').classList.add('hidden');
-        document.getElementById('payment-code-input').value = '';
-        foundRequest = null;
-        
-        // Mettre à jour les listes
-        loadDashboardStats();
-        loadFeesData();
-        
-    } catch (error) {
-        showAlert('Erreur de validation: ' + error.message, 'error');
-    }
-});
-
-document.getElementById('cancel-edit-payment-btn').addEventListener('click', () => {
-    document.getElementById('payment-details-card').classList.add('hidden');
-    document.getElementById('edit-payment-form').classList.add('hidden');
-    document.getElementById('payment-code-input').value = '';
-    foundRequest = null;
-});
-
-// Supprimer l'affichage automatique des paiements en attente
-async function loadPendingPaymentsList() {
-    const listEl = document.getElementById('pending-payments-list');
-    if (listEl) {
-        listEl.innerHTML = ''; // Vider la liste
-    }
-}
-
-// --- Paiements sur place (CORRIGÉ AVEC FILTRE DES MOIS ET STATISTIQUES) ---
-function setupPaymentForm() {
-    const studentIdInput = document.getElementById('onsite-student-id');
-    const studentTypeSelect = document.getElementById('onsite-student-type');
-    const monthlyAmountInput = document.getElementById('onsite-monthly-amount');
-    const paymentTypeSelect = document.getElementById('onsite-payment-type');
-    
-    // Créer un conteneur pour les statistiques de paiement s'il n'existe pas déjà
-    if (!document.getElementById('payment-stats-container')) {
-        const paymentStatsHTML = `
-            <div id="payment-stats-container" class="card hidden" style="margin-top: 1rem;">
-                <h5>Statistiques de paiement de l'élève</h5>
-                <div class="fees-summary" style="grid-template-columns: repeat(3, 1fr);">
-                    <div class="fees-summary-card">
-                        <h4>Total payé</h4>
-                        <p id="student-total-paid" class="currency-display">$0.00</p>
-                    </div>
-                    <div class="fees-summary-card">
-                        <h4>Mois payés</h4>
-                        <p id="student-months-count">0</p>
-                    </div>
-                    <div class="fees-summary-card">
-                        <h4>Mois restants</h4>
-                        <p id="student-months-remaining">12</p>
-                    </div>
-                </div>
-                <div class="table-container" style="max-height: 200px; overflow-y: auto;">
-                    <table id="student-payments-history" style="font-size: 0.9rem;">
-                        <thead>
-                            <tr>
-                                <th>Mois</th>
-                                <th>Type de frais</th>
-                                <th>Montant</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="student-payments-body">
-                            <tr><td colspan="4" style="text-align: center;">Aucun paiement trouvé</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-        
-        // Insérer après le formulaire
-        document.getElementById('onsite-payment-form').insertAdjacentHTML('afterend', paymentStatsHTML);
-    }
-    
-    studentIdInput.addEventListener('blur', async () => {
-        const matricule = studentIdInput.value.trim();
-        if (!matricule) return;
-        
-        try {
-            let studentDoc;
-            let studentData;
-            
-            if (studentTypeSelect.value === 'secondary') {
-                studentDoc = await getDoc(doc(db, 'students', matricule));
-            } else if (studentTypeSelect.value === 'primary') {
-                studentDoc = await getDoc(doc(db, 'primary_students', matricule));
-            } else {
-                studentDoc = await getDoc(doc(db, 'kindergarten_students', matricule));
+        document.getElementById('find-payment-btn').addEventListener('click', async () => {
+            const code = document.getElementById('payment-code-input').value;
+            if (!code) {
+                showAlert("Veuillez entrer un code de paiement", "error");
+                return;
             }
             
-            if (studentDoc.exists()) {
-                studentData = studentDoc.data();
-                document.getElementById('onsite-student-name').value = studentData.fullName;
-                document.getElementById('onsite-student-class').value = studentData.class;
+            try {
+                const q = query(collection(db, 'payment_requests'), where('paymentCode', '==', code), where('status', '==', 'pending'));
+                const snap = await getDocs(q);
+
+                if (snap.empty) {
+                    showAlert('Aucune demande de paiement en attente trouvée pour ce code.', 'error');
+                    document.getElementById('payment-details-card').classList.add('hidden');
+                    return;
+                }
                 
-                // Récupérer tous les paiements de l'élève
-                const paymentsSnap = await getDocs(query(
-                    collection(db, 'payments'), 
-                    where('studentId', '==', matricule)
-                ));
+                foundRequest = snap.docs[0];
+                const data = foundRequest.data();
+                document.getElementById('payment-student-name').textContent = data.studentName;
+                document.getElementById('payment-months').textContent = data.months.join(', ');
+                document.getElementById('payment-type').textContent = data.paymentType || 'Frais scolaires';
+                document.getElementById('payment-amount').textContent = `$${data.amount.toFixed(2)}`;
+                document.getElementById('payment-details-card').classList.remove('hidden');
+            } catch (error) {
+                showAlert('Erreur de recherche: ' + error.message, 'error');
+            }
+        });
+
+        document.getElementById('confirm-payment-btn').addEventListener('click', async () => {
+            if (!foundRequest) return;
+            
+            try {
+                const batch = writeBatch(db);
+                batch.update(doc(db, 'payment_requests', foundRequest.id), { 
+                    status: 'paid',
+                    validatedAt: serverTimestamp(),
+                    validatedBy: currentSecretary.uid
+                });
+
+                const data = foundRequest.data();
+                data.months.forEach(month => {
+                    const paymentDocRef = doc(collection(db, 'payments'));
+                    batch.set(paymentDocRef, {
+                        studentId: data.studentId,
+                        studentName: data.studentName,
+                        studentClass: data.studentClass,
+                        studentType: data.studentType || 'secondary',
+                        month: month,
+                        paymentType: data.paymentType || 'Frais scolaires',
+                        amount: data.amount / data.months.length,
+                        validatedBy: currentSecretary.uid,
+                        validatedAt: serverTimestamp(),
+                        createdAt: serverTimestamp(),
+                        paymentMethod: 'online'
+                    });
+                });
+
+                await batch.commit();
                 
-                const studentPayments = [];
-                paymentsSnap.forEach(doc => {
-                    studentPayments.push({ id: doc.id, ...doc.data() });
+                // Générer le reçu
+                await generateReceipt(data.studentName, data.months, data.amount, data.paymentCode, data.studentClass, data.paymentType);
+                
+                showAlert('Paiement validé avec succès !', 'success');
+                document.getElementById('payment-details-card').classList.add('hidden');
+                document.getElementById('payment-code-input').value = '';
+                foundRequest = null;
+                
+                // Mettre à jour les listes
+                loadPendingPaymentsList();
+                loadDashboardStats();
+                loadFeesData();
+            } catch (error) {
+                showAlert('Erreur de validation: ' + error.message, 'error');
+            }
+        });
+
+        async function loadPendingPaymentsList() {
+            const listEl = document.getElementById('pending-payments-list');
+            listEl.innerHTML = "Chargement...";
+            
+            try {
+                const pendingSnap = await getDocs(query(collection(db, 'payment_requests'), where('status', '==', 'pending')));
+                
+                if (pendingSnap.empty) {
+                    listEl.innerHTML = '<tr><td colspan="6" style="text-align: center;">Aucun paiement en attente.</td></tr>';
+                    return;
+                }
+                
+                let html = '';
+                pendingSnap.forEach(doc => {
+                    const data = doc.data();
+                    html += `
+                        <tr>
+                            <td>${data.paymentCode}</td>
+                            <td>${data.studentName}</td>
+                            <td>${data.months.join(', ')}</td>
+                            <td>${data.paymentType || 'Frais scolaires'}</td>
+                            <td class="currency-display">$${data.amount.toFixed(2)}</td>
+                            <td class="action-buttons">
+                                <button class="btn btn-success" onclick="validatePaymentByCode('${data.paymentCode}')">Valider</button>
+                            </td>
+                        </tr>
+                    `;
                 });
                 
-                // Afficher les statistiques de paiement
-                displayPaymentStats(studentData, studentPayments);
-                
-                // Générer les checkboxes pour les mois en fonction du type de frais sélectionné
-                generateFilteredMonthCheckboxes(studentPayments, paymentTypeSelect.value);
-            } else {
-                document.getElementById('onsite-student-name').value = '';
-                document.getElementById('onsite-student-class').value = '';
-                document.getElementById('onsite-amount').value = '';
-                document.getElementById('payment-stats-container').classList.add('hidden');
-                showAlert("Aucun élève trouvé avec ce matricule", "error");
+                listEl.innerHTML = html;
+            } catch (error) {
+                console.error("Erreur chargement paiements:", error);
+                listEl.innerHTML = '<tr><td colspan="6" style="text-align: center;">Erreur de chargement</td></tr>';
             }
-        } catch (error) {
-            console.error("Erreur recherche élève:", error);
         }
-    });
-    
-    // Mettre à jour les mois quand le type de paiement change
-    paymentTypeSelect.addEventListener('change', async () => {
-        const matricule = document.getElementById('onsite-student-id').value.trim();
-        if (!matricule) return;
-        
-        try {
-            // Récupérer les paiements de l'élève
-            const paymentsSnap = await getDocs(query(
-                collection(db, 'payments'), 
-                where('studentId', '==', matricule)
-            ));
+
+        // --- Paiements sur place (CORRIGÉ) ---
+        function setupPaymentForm() {
+            const studentIdInput = document.getElementById('onsite-student-id');
+            const studentTypeSelect = document.getElementById('onsite-student-type');
+            const monthlyAmountInput = document.getElementById('onsite-monthly-amount');
             
-            const studentPayments = [];
-            paymentsSnap.forEach(doc => {
-                studentPayments.push({ id: doc.id, ...doc.data() });
+            studentIdInput.addEventListener('blur', async () => {
+                const matricule = studentIdInput.value.trim();
+                if (!matricule) return;
+                
+                try {
+                    let studentDoc;
+                    if (studentTypeSelect.value === 'secondary') {
+                        studentDoc = await getDoc(doc(db, 'students', matricule));
+                    } else if (studentTypeSelect.value === 'primary') {
+                        studentDoc = await getDoc(doc(db, 'primary_students', matricule));
+                    } else {
+                        studentDoc = await getDoc(doc(db, 'kindergarten_students', matricule));
+                    }
+                    
+                    if (studentDoc.exists()) {
+                        const data = studentDoc.data();
+                        document.getElementById('onsite-student-name').value = data.fullName;
+                        document.getElementById('onsite-student-class').value = data.class;
+                        
+                        // Générer les checkboxes pour les mois
+                        generateMonthCheckboxes();
+                    } else {
+                        document.getElementById('onsite-student-name').value = '';
+                        document.getElementById('onsite-student-class').value = '';
+                        document.getElementById('onsite-amount').value = '';
+                        showAlert("Aucun élève trouvé avec ce matricule", "error");
+                    }
+                } catch (error) {
+                    console.error("Erreur recherche élève:", error);
+                }
             });
             
-            // Mettre à jour les checkboxes
-            generateFilteredMonthCheckboxes(studentPayments, paymentTypeSelect.value);
-        } catch (error) {
-            console.error("Erreur lors du filtrage des mois:", error);
-        }
-    });
-    
-    // Gérer l'affichage du champ de spécification pour "Autres"
-    paymentTypeSelect.addEventListener('change', function() {
-        const otherSpec = document.getElementById('onsite-payment-other');
-        if (this.value === 'Autres') {
-            otherSpec.style.display = 'block';
-            otherSpec.required = true;
-        } else {
-            otherSpec.style.display = 'none';
-            otherSpec.required = false;
-            otherSpec.value = '';
-        }
-    });
-    
-    // Calcul automatique du montant total
-    monthlyAmountInput.addEventListener('input', updateTotalAmount);
-}
-
-// Fonction pour afficher les statistiques de paiement de l'élève
-function displayPaymentStats(studentData, payments) {
-    const statsContainer = document.getElementById('payment-stats-container');
-    const totalPaidEl = document.getElementById('student-total-paid');
-    const monthsCountEl = document.getElementById('student-months-count');
-    const monthsRemainingEl = document.getElementById('student-months-remaining');
-    const paymentsBody = document.getElementById('student-payments-body');
-    
-    // Filtrer uniquement les frais scolaires
-    const schoolFeesPayments = payments.filter(p => p.paymentType === 'Frais scolaires');
-    
-    // Calculer le total payé
-    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-    totalPaidEl.textContent = `$${totalPaid.toFixed(2)}`;
-    
-    // Compter les mois payés (pour les frais scolaires)
-    const paidMonths = schoolFeesPayments.map(p => p.month);
-    const uniquePaidMonths = [...new Set(paidMonths)];
-    monthsCountEl.textContent = uniquePaidMonths.length;
-    
-    // Mois restants (total 12 mois)
-    const remainingMonths = 12 - uniquePaidMonths.length;
-    monthsRemainingEl.textContent = remainingMonths;
-    
-    // Générer le tableau des paiements
-    if (payments.length > 0) {
-        // Trier par date (du plus récent au plus ancien)
-        const sortedPayments = payments.sort((a, b) => {
-            const dateA = a.validatedAt?.toDate?.() || new Date(0);
-            const dateB = b.validatedAt?.toDate?.() || new Date(0);
-            return dateB - dateA;
-        });
-        
-        let html = '';
-        sortedPayments.forEach(payment => {
-            const paymentDate = payment.validatedAt?.toDate?.() 
-                ? formatDate(payment.validatedAt.toDate()) 
-                : 'Date inconnue';
+            // Gérer l'affichage du champ de spécification pour "Autres"
+            document.getElementById('onsite-payment-type').addEventListener('change', function() {
+                const otherSpec = document.getElementById('onsite-payment-other');
+                if (this.value === 'Autres') {
+                    otherSpec.style.display = 'block';
+                    otherSpec.required = true;
+                } else {
+                    otherSpec.style.display = 'none';
+                    otherSpec.required = false;
+                    otherSpec.value = '';
+                }
+            });
             
-            const monthDisplay = payment.month === 'inscription' 
-                ? 'Inscription' 
-                : payment.month;
-            
-            html += `
-                <tr>
-                    <td>${monthDisplay}</td>
-                    <td>${payment.paymentType || 'Frais scolaires'}</td>
-                    <td class="currency-display">$${payment.amount.toFixed(2)}</td>
-                    <td>${paymentDate}</td>
-                </tr>
-            `;
-        });
-        paymentsBody.innerHTML = html;
-    } else {
-        paymentsBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Aucun paiement trouvé</td></tr>';
-    }
-    
-    statsContainer.classList.remove('hidden');
-}
-
-// Fonction modifiée pour générer les checkboxes avec filtrage
-function generateFilteredMonthCheckboxes(payments, selectedPaymentType) {
-    const container = document.getElementById('onsite-months-container');
-    const months = [
-        'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
-    ];
-    
-    // Récupérer les mois déjà payés pour le type de frais sélectionné
-    let paidMonths = [];
-    if (selectedPaymentType === 'Frais scolaires') {
-        paidMonths = payments
-            .filter(p => p.paymentType === 'Frais scolaires')
-            .map(p => p.month);
-    } else if (selectedPaymentType === 'Frais de l\'état') {
-        paidMonths = payments
-            .filter(p => p.paymentType === 'Frais de l\'état')
-            .map(p => p.month);
-    } else if (selectedPaymentType === 'visite') {
-        paidMonths = payments
-            .filter(p => p.paymentType === 'visite')
-            .map(p => p.month);
-    } else if (selectedPaymentType === 'achat pull') {
-        paidMonths = payments
-            .filter(p => p.paymentType === 'achat pull')
-            .map(p => p.month);
-    } else if (selectedPaymentType && selectedPaymentType !== '') {
-        // Pour les autres types, on vérifie aussi
-        paidMonths = payments
-            .filter(p => p.paymentType === selectedPaymentType)
-            .map(p => p.month);
-    }
-    
-    let html = '';
-    months.forEach(month => {
-        const isPaid = paidMonths.includes(month);
-        
-        if (isPaid) {
-            // Mois déjà payé - afficher comme désactivé avec indication
-            html += `
-                <div class="month-checkbox" style="opacity: 0.5;">
-                    <input type="checkbox" id="month-${month}" value="${month}" class="month-checkbox-input" disabled>
-                    <label for="month-${month}">${month} <span style="color: var(--success); font-size: 0.8rem;">(déjà payé)</span></label>
-                </div>
-            `;
-        } else {
-            // Mois non payé - normal
-            html += `
-                <div class="month-checkbox">
-                    <input type="checkbox" id="month-${month}" value="${month}" class="month-checkbox-input">
-                    <label for="month-${month}">${month}</label>
-                </div>
-            `;
+            // Calcul automatique du montant total
+            monthlyAmountInput.addEventListener('input', updateTotalAmount);
         }
-    });
-    
-    container.innerHTML = html;
-    
-    // Ajouter l'écouteur d'événements pour le calcul du montant total
-    document.querySelectorAll('.month-checkbox-input:not([disabled])').forEach(checkbox => {
-        checkbox.addEventListener('change', updateTotalAmount);
-    });
-    
-    // Ajouter un message récapitulatif
-    if (paidMonths.length > 0) {
-        const summaryHTML = `
-            <div style="margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 4px; font-size: 0.9rem;">
-                <strong>Mois déjà payés pour "${selectedPaymentType || 'Frais scolaires'}" :</strong> 
-                ${paidMonths.join(', ')}
-            </div>
-        `;
-        
-        // Supprimer l'ancien résumé s'il existe
-        const oldSummary = container.querySelector('.paid-months-summary');
-        if (oldSummary) oldSummary.remove();
-        
-        // Ajouter le nouveau résumé
-        const summaryDiv = document.createElement('div');
-        summaryDiv.className = 'paid-months-summary';
-        summaryDiv.innerHTML = summaryHTML;
-        container.appendChild(summaryDiv);
-    }
-}
+
+        function generateMonthCheckboxes() {
+            const container = document.getElementById('onsite-months-container');
+            const months = [
+                'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+                'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+            ];
+            
+            let html = '';
+            months.forEach(month => {
+                html += `
+                    <div class="month-checkbox">
+                        <input type="checkbox" id="month-${month}" value="${month}" class="month-checkbox-input">
+                        <label for="month-${month}">${month}</label>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Ajouter l'écouteur d'événements pour le calcul du montant total
+            document.querySelectorAll('.month-checkbox-input').forEach(checkbox => {
+                checkbox.addEventListener('change', updateTotalAmount);
+            });
+        }
+
+        function updateTotalAmount() {
+            const selectedMonths = document.querySelectorAll('.month-checkbox-input:checked');
+            const monthlyAmount = parseFloat(document.getElementById('onsite-monthly-amount').value) || 0;
+            const totalAmount = selectedMonths.length * monthlyAmount;
+            document.getElementById('onsite-amount').value = totalAmount.toFixed(2);
+        }
+
+        document.getElementById('onsite-payment-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const studentMatricule = document.getElementById('onsite-student-id').value;
+            const studentName = document.getElementById('onsite-student-name').value;
+            const studentClass = document.getElementById('onsite-student-class').value;
+            const studentType = document.getElementById('onsite-student-type').value;
+            const paymentType = document.getElementById('onsite-payment-type').value;
+            const paymentOther = document.getElementById('onsite-payment-other').value;
+            const monthlyAmount = parseFloat(document.getElementById('onsite-monthly-amount').value);
+            const totalAmount = parseFloat(document.getElementById('onsite-amount').value);
+            
+            if (!studentMatricule || !studentName || !studentClass || !paymentType || !monthlyAmount || !totalAmount) {
+                showAlert("Veuillez remplir tous les champs", "error");
+                return;
+            }
+            
+            // Si le type est "Autres" mais pas de spécification
+            if (paymentType === 'Autres' && !paymentOther) {
+                showAlert("Veuillez spécifier le type de frais", "error");
+                return;
+            }
+            
+            // Récupérer les mois sélectionnés
+            const selectedMonths = [];
+            document.querySelectorAll('.month-checkbox-input:checked').forEach(checkbox => {
+                selectedMonths.push(checkbox.value);
+            });
+            
+            if (selectedMonths.length === 0) {
+                showAlert("Veuillez sélectionner au moins un mois", "error");
+                return;
+            }
+            
+            // Vérifier que le montant total correspond
+            const calculatedTotal = selectedMonths.length * monthlyAmount;
+            if (Math.abs(totalAmount - calculatedTotal) > 0.01) {
+                showAlert("Le montant total ne correspond pas au nombre de mois sélectionnés", "error");
+                return;
+            }
+            
+            try {
+                // Vérifier si l'élève existe
+                let studentDoc;
+                if (studentType === 'secondary') {
+                    studentDoc = await getDoc(doc(db, 'students', studentMatricule));
+                } else if (studentType === 'primary') {
+                    studentDoc = await getDoc(doc(db, 'primary_students', studentMatricule));
+                } else {
+                    studentDoc = await getDoc(doc(db, 'kindergarten_students', studentMatricule));
+                }
+                
+                if (!studentDoc.exists()) {
+                    showAlert("Élève non trouvé", "error");
+                    return;
+                }
+                
+                // Vérifier l'ordre des mois de paiement
+                const allMonths = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+                
+                // Récupérer les paiements de l'élève
+                const paymentsSnap = await getDocs(query(collection(db, 'payments'), where('studentId', '==', studentMatricule)));
+                const paidMonths = paymentsSnap.docs.map(doc => doc.data().month);
+                
+                // Vérifier si des mois sélectionnés sont déjà payés
+                const alreadyPaidMonths = selectedMonths.filter(month => paidMonths.includes(month));
+                if (alreadyPaidMonths.length > 0) {
+                    showAlert(`L'élève a déjà payé le(s) mois suivant(s): ${alreadyPaidMonths.join(', ')}`, "error");
+                    return;
+                }
+                
+                // Enregistrer les paiements
+                const batch = writeBatch(db);
+                
+                selectedMonths.forEach(month => {
+                    const paymentDocRef = doc(collection(db, 'payments'));
+                    batch.set(paymentDocRef, {
+                        studentId: studentMatricule,
+                        studentName: studentName,
+                        studentClass: studentClass,
+                        studentType: studentType,
+                        month: month,
+                        paymentType: paymentType === 'Autres' ? paymentOther : paymentType,
+                        amount: monthlyAmount,
+                        validatedBy: currentSecretary.uid,
+                        validatedAt: serverTimestamp(),
+                        createdAt: serverTimestamp(),
+                        paymentMethod: 'onsite'
+                    });
+                });
+                
+                await batch.commit();
+                
+                // Générer le reçu
+                await generateReceipt(studentName, selectedMonths, totalAmount, 'ONSITE-' + generatePaymentCode(), studentClass, paymentType === 'Autres' ? paymentOther : paymentType);
+                
+                showAlert('Paiement enregistré avec succès !', 'success');
+                document.getElementById('onsite-payment-form').reset();
+                document.getElementById('onsite-months-container').innerHTML = '';
+                document.getElementById('onsite-payment-other').style.display = 'none';
+                
+                // Mettre à jour les données
+                loadFeesData();
+                loadDashboardStats();
+                
+            } catch (error) {
+                showAlert('Erreur lors de l\'enregistrement: ' + error.message, 'error');
+            }
+        });
 
         // --- Gestion des Frais (CORRIGÉE) ---
         async function loadFeesClasses() {
@@ -4485,13 +4346,6 @@ async function loadFeesData() {
         console.error("Erreur chargement données frais:", error);
         showAlert('Erreur lors du chargement des données: ' + error.message, 'error');
     }
-}
-
-function updateTotalAmount() {
-    const selectedMonths = document.querySelectorAll('.month-checkbox-input:not([disabled]):checked');
-    const monthlyAmount = parseFloat(document.getElementById('onsite-monthly-amount').value) || 0;
-    const totalAmount = selectedMonths.length * monthlyAmount;
-    document.getElementById('onsite-amount').value = totalAmount.toFixed(2);
 }
 
 // Version corrigée de updateFeesStudentsLists (même que précédente, gardez-la)
@@ -8722,4 +8576,4 @@ navigator.serviceWorker.addEventListener('controllerchange', () => {
 </body>
 </html>
 
- 
+  

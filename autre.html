@@ -18,13 +18,9 @@
   <meta name="msapplication-tap-highlight" content="no">
   <meta name="theme-color" content="#3498db">
 
-
-
 <!-- Service Worker et mise à jour -->
     <meta name="version" content="2.1.0">
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-
-
 
   <!-- Apple Touch Icons -->
   <link rel="apple-touch-icon" href="icon-192x192.png">
@@ -72,11 +68,12 @@
         .btn-danger { background: var(--danger); }
         .btn-warning { background: var(--warning); }
         .btn-info { background: var(--info); }
+        .btn-secondary { background: var(--dark); }
         .form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
         .form-group { margin-bottom: 1rem; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
         .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
-        .form-row { display: flex; gap: 1rem; }
+        .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
         .alert { padding: 1rem; border-radius: 5px; margin-bottom: 1rem; }
         .alert-success { background: #d4edda; color: #155724; }
         .alert-error { background: #f8d7da; color: #721c24; }
@@ -94,7 +91,7 @@
         .currency-display { font-weight: bold; color: var(--success); }
         
         /* --- Tabs --- */
-        .tabs { display: flex; border-bottom: 1px solid #ddd; margin-bottom: 1.5rem; }
+        .tabs { display: flex; border-bottom: 1px solid #ddd; margin-bottom: 1.5rem; flex-wrap: wrap; }
         .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; }
         .tab.active { border-bottom: 2px solid var(--primary); color: var(--primary); font-weight: 500; }
         .tab-content { display: none; }
@@ -111,7 +108,7 @@
         .badge-warning { background-color: var(--warning); color: white; }
         .badge-danger { background-color: var(--danger); color: white; }
         .badge-info { background-color: var(--info); color: white; }
-        .action-buttons { display: flex; gap: 0.5rem; }
+        .action-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
         .action-buttons button { padding: 6px 12px; font-size: 0.85rem; }
         
         /* --- Modal styles --- */
@@ -142,6 +139,30 @@
             .sidebar { position: fixed; z-index: 1000; height: 100%; }
             .main-content { margin-left: 0; }
         }
+
+        /* --- Paramétrage salaire --- */
+        .salary-config-card { background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 1rem; }
+        .config-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid #eee; }
+        .config-item:last-child { border-bottom: none; }
+        .config-amount { font-weight: bold; color: var(--primary); }
+        .config-input-group { display: flex; gap: 0.5rem; align-items: center; }
+        .config-input { width: 120px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        
+        /* --- Carte de service --- */
+        .service-card { border: 2px solid var(--primary); padding: 1.5rem; border-radius: 10px; background: white; max-width: 500px; margin: 0 auto; }
+        .card-header { text-align: center; margin-bottom: 1.5rem; }
+        .card-photo { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); margin: 0 auto 1rem; display: block; }
+        .card-info { margin: 1rem 0; }
+        .card-info table { width: 100%; }
+        .card-info td { padding: 5px; border: none; }
+        .card-footer { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: #666; }
+        
+        /* --- Mois disponibles --- */
+        .months-selector { display: flex; flex-wrap: wrap; gap: 10px; margin: 1rem 0; }
+        .month-chip { padding: 8px 12px; border-radius: 20px; background: var(--light); cursor: pointer; border: 1px solid #ddd; }
+        .month-chip.selected { background: var(--primary); color: white; border-color: var(--primary); }
+        .month-chip.disabled { opacity: 0.5; cursor: not-allowed; background: #e0e0e0; }
+        .month-chip.paid { background: var(--success); color: white; opacity: 0.7; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -155,8 +176,7 @@
                 <li><a href="#" class="active" data-page="workers"><i class="fas fa-hard-hat fa-fw"></i> Personnels Ouvriers</a></li>
                 <li><a href="#" data-page="communication"><i class="fas fa-bullhorn fa-fw"></i> Communication</a></li>
                 <li><a href="#" data-page="salaries"><i class="fas fa-money-check-alt fa-fw"></i> Paiement Salaires</a></li>
-                <li><a href="#" data-page="archive"><i class="fas fa-archive fa-fw"></i> Archives</a></li>
-                <button class="back-btn" onclick="window.location.href='index.html'" style='font-size:15; background-color:#333;'>
+                <button class="back-btn" onclick="window.location.href='index.html'" style='font-size:15; background-color:#333; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; margin-top: 10px;'>
                 <i class="fas fa-arrow-left"></i>
                 Retour au Portail
             </button>
@@ -168,6 +188,10 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <h2 id="page-title">Personnels Ouvriers</h2>
+                <div id="user-info" style="display: flex; align-items: center; gap: 10px;">
+                    <span id="user-name"></span>
+                    <img id="user-photo" src="" alt="" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; display: none;">
+                </div>
             </header>
             <main class="content-area">
                 <div id="global-alert" class="alert hidden"></div>
@@ -393,35 +417,48 @@
                     <div class="tabs">
                         <div class="tab active" data-tab="teachers">Paiement Enseignants</div>
                         <div class="tab" data-tab="workers">Paiement Personnels</div>
+                        <div class="tab" data-tab="agents">Paiement Agents Admin</div>
                     </div>
                     
                     <!-- Onglet: Paiement Enseignants -->
                     <div id="teachers-tab" class="tab-content active">
                         <div class="card">
+                            <h4>Paramétrage des salaires - Enseignants</h4>
+                            <div class="salary-config-card">
+                                <div class="config-item">
+                                    <span>Montant par défaut</span>
+                                    <div class="config-input-group">
+                                        <span class="currency-symbol">$</span>
+                                        <input type="number" id="default-teacher-salary" class="config-input" step="0.01" min="0" value="500">
+                                        <button class="btn btn-primary btn-sm" onclick="saveTeacherSalaryConfig()">Enregistrer</button>
+                                    </div>
+                                </div>
+                                <div class="config-item">
+                                    <span>Année scolaire en cours</span>
+                                    <select id="teacher-current-year" class="config-input" onchange="loadTeacherPaidMonths()">
+                                        <option value="2023-2024">2023-2024</option>
+                                        <option value="2024-2025" selected>2024-2025</option>
+                                        <option value="2025-2026">2025-2026</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
                             <h4>Paiement des salaires - Enseignants</h4>
                             <form id="teacher-salary-form">
                                 <div class="form-row">
                                     <div class="form-group" style="flex: 1;">
-                                        <label>Mois à payer *</label>
-                                        <select id="teacher-salary-month" class="form-control" required>
-                                            <option value="">Sélectionner</option>
-                                            <option value="janvier">Janvier</option>
-                                            <option value="février">Février</option>
-                                            <option value="mars">Mars</option>
-                                            <option value="avril">Avril</option>
-                                            <option value="mai">Mai</option>
-                                            <option value="juin">Juin</option>
-                                            <option value="juillet">Juillet</option>
-                                            <option value="août">Août</option>
-                                            <option value="septembre">Septembre</option>
-                                            <option value="octobre">Octobre</option>
-                                            <option value="novembre">Novembre</option>
-                                            <option value="décembre">Décembre</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group" style="flex: 1;">
                                         <label>Matricule enseignant *</label>
                                         <input type="text" id="teacher-matricule" class="form-control" placeholder="Ex: ENS001" required>
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>Année scolaire *</label>
+                                        <select id="teacher-salary-year" class="form-control" required>
+                                            <option value="2023-2024">2023-2024</option>
+                                            <option value="2024-2025" selected>2024-2025</option>
+                                            <option value="2025-2026">2025-2026</option>
+                                        </select>
                                     </div>
                                     <div class="form-group" style="flex: 1;">
                                         <button type="button" class="btn btn-info" style="margin-top: 28px;" onclick="findTeacher()">
@@ -446,9 +483,33 @@
                                             <input type="text" id="teacher-found-classes" class="form-control" readonly>
                                         </div>
                                     </div>
+                                    <div class="form-group">
+                                        <label>Mois disponibles pour paiement</label>
+                                        <div id="teacher-available-months" class="months-selector">
+                                            <!-- Mois chargés dynamiquement -->
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="form-row">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>Mois à payer *</label>
+                                        <select id="teacher-salary-month" class="form-control" required>
+                                            <option value="">Sélectionner</option>
+                                            <option value="janvier">Janvier</option>
+                                            <option value="février">Février</option>
+                                            <option value="mars">Mars</option>
+                                            <option value="avril">Avril</option>
+                                            <option value="mai">Mai</option>
+                                            <option value="juin">Juin</option>
+                                            <option value="juillet">Juillet</option>
+                                            <option value="août">Août</option>
+                                            <option value="septembre">Septembre</option>
+                                            <option value="octobre">Octobre</option>
+                                            <option value="novembre">Novembre</option>
+                                            <option value="décembre">Décembre</option>
+                                        </select>
+                                    </div>
                                     <div class="form-group" style="flex: 1;">
                                         <label>Montant du salaire ($) *</label>
                                         <div class="currency-input-group">
@@ -480,6 +541,7 @@
                                             <th>Date</th>
                                             <th>Matricule</th>
                                             <th>Nom</th>
+                                            <th>Année</th>
                                             <th>Mois</th>
                                             <th>Montant</th>
                                             <th>Statut</th>
@@ -495,30 +557,42 @@
                     <!-- Onglet: Paiement Personnels -->
                     <div id="workers-tab" class="tab-content">
                         <div class="card">
+                            <h4>Paramétrage des salaires - Personnels Ouvriers</h4>
+                            <div class="salary-config-card">
+                                <div class="config-item">
+                                    <span>Montant par défaut</span>
+                                    <div class="config-input-group">
+                                        <span class="currency-symbol">$</span>
+                                        <input type="number" id="default-worker-salary" class="config-input" step="0.01" min="0" value="300">
+                                        <button class="btn btn-primary btn-sm" onclick="saveWorkerSalaryConfig()">Enregistrer</button>
+                                    </div>
+                                </div>
+                                <div class="config-item">
+                                    <span>Année scolaire en cours</span>
+                                    <select id="worker-current-year" class="config-input" onchange="loadWorkerPaidMonths()">
+                                        <option value="2023-2024">2023-2024</option>
+                                        <option value="2024-2025" selected>2024-2025</option>
+                                        <option value="2025-2026">2025-2026</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
                             <h4>Paiement des salaires - Personnels Ouvriers</h4>
                             <form id="worker-salary-form">
                                 <div class="form-row">
                                     <div class="form-group" style="flex: 1;">
-                                        <label>Mois à payer *</label>
-                                        <select id="worker-salary-month" class="form-control" required>
-                                            <option value="">Sélectionner</option>
-                                            <option value="janvier">Janvier</option>
-                                            <option value="février">Février</option>
-                                            <option value="mars">Mars</option>
-                                            <option value="avril">Avril</option>
-                                            <option value="mai">Mai</option>
-                                            <option value="juin">Juin</option>
-                                            <option value="juillet">Juillet</option>
-                                            <option value="août">Août</option>
-                                            <option value="septembre">Septembre</option>
-                                            <option value="octobre">Octobre</option>
-                                            <option value="novembre">Novembre</option>
-                                            <option value="décembre">Décembre</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group" style="flex: 1;">
                                         <label>Matricule personnel *</label>
                                         <input type="text" id="worker-salary-matricule" class="form-control" placeholder="Ex: PER001" required>
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>Année scolaire *</label>
+                                        <select id="worker-salary-year" class="form-control" required>
+                                            <option value="2023-2024">2023-2024</option>
+                                            <option value="2024-2025" selected>2024-2025</option>
+                                            <option value="2025-2026">2025-2026</option>
+                                        </select>
                                     </div>
                                     <div class="form-group" style="flex: 1;">
                                         <button type="button" class="btn btn-info" style="margin-top: 28px;" onclick="findWorkerForSalary()">
@@ -543,9 +617,33 @@
                                             <input type="text" id="worker-found-phone" class="form-control" readonly>
                                         </div>
                                     </div>
+                                    <div class="form-group">
+                                        <label>Mois disponibles pour paiement</label>
+                                        <div id="worker-available-months" class="months-selector">
+                                            <!-- Mois chargés dynamiquement -->
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="form-row">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>Mois à payer *</label>
+                                        <select id="worker-salary-month" class="form-control" required>
+                                            <option value="">Sélectionner</option>
+                                            <option value="janvier">Janvier</option>
+                                            <option value="février">Février</option>
+                                            <option value="mars">Mars</option>
+                                            <option value="avril">Avril</option>
+                                            <option value="mai">Mai</option>
+                                            <option value="juin">Juin</option>
+                                            <option value="juillet">Juillet</option>
+                                            <option value="août">Août</option>
+                                            <option value="septembre">Septembre</option>
+                                            <option value="octobre">Octobre</option>
+                                            <option value="novembre">Novembre</option>
+                                            <option value="décembre">Décembre</option>
+                                        </select>
+                                    </div>
                                     <div class="form-group" style="flex: 1;">
                                         <label>Montant du salaire ($) *</label>
                                         <div class="currency-input-group">
@@ -577,6 +675,7 @@
                                             <th>Date</th>
                                             <th>Matricule</th>
                                             <th>Nom</th>
+                                            <th>Année</th>
                                             <th>Mois</th>
                                             <th>Montant</th>
                                             <th>Statut</th>
@@ -588,99 +687,148 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Page: Archives -->
-                <div id="archive-page" class="page">
-                    <div class="card">
-                        <h4>Archives - Communiqués publiés</h4>
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Filtrer par type de frais</label>
-                                <select id="archive-fee-filter" class="form-control">
-                                    <option value="">Tous les frais</option>
-                                    <option value="Frais scolaires">Frais scolaires</option>
-                                    <option value="Frais de l'état">Frais de l'état</option>
-                                    <option value="visite">Visite</option>
-                                    <option value="achat pull">Achat pull</option>
-                                    <option value="Frais d'inscription">Frais d'inscription</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Filtrer par mois</label>
-                                <select id="archive-month-filter" class="form-control">
-                                    <option value="">Tous les mois</option>
-                                    <option value="janvier">Janvier</option>
-                                    <option value="février">Février</option>
-                                    <option value="mars">Mars</option>
-                                    <option value="avril">Avril</option>
-                                    <option value="mai">Mai</option>
-                                    <option value="juin">Juin</option>
-                                    <option value="juillet">Juillet</option>
-                                    <option value="août">Août</option>
-                                    <option value="septembre">Septembre</option>
-                                    <option value="octobre">Octobre</option>
-                                    <option value="novembre">Novembre</option>
-                                    <option value="décembre">Décembre</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Filtrer par année scolaire</label>
-                                <select id="archive-year-filter" class="form-control">
-                                    <option value="">Toutes les années</option>
-                                    <option value="2023-2024">2023-2024</option>
-                                    <option value="2024-2025">2024-2025</option>
-                                    <option value="2025-2026">2025-2026</option>
-                                </select>
+                    <!-- NOUVEL ONGLET: Paiement Agents Administratifs -->
+                    <div id="agents-tab" class="tab-content">
+                        <div class="card">
+                            <h4>Paramétrage des salaires - Agents Administratifs</h4>
+                            <div class="salary-config-card">
+                                <div class="config-item">
+                                    <span>Montant par défaut</span>
+                                    <div class="config-input-group">
+                                        <span class="currency-symbol">$</span>
+                                        <input type="number" id="default-agent-salary" class="config-input" step="0.01" min="0" value="400">
+                                        <button class="btn btn-primary btn-sm" onclick="saveAgentSalaryConfig()">Enregistrer</button>
+                                    </div>
+                                </div>
+                                <div class="config-item">
+                                    <span>Année scolaire en cours</span>
+                                    <select id="agent-current-year" class="config-input" onchange="loadAgentPaidMonths()">
+                                        <option value="2023-2024">2023-2024</option>
+                                        <option value="2024-2025" selected>2024-2025</option>
+                                        <option value="2025-2026">2025-2026</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                        
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Type de frais</th>
-                                        <th>Mois</th>
-                                        <th>Année scolaire</th>
-                                        <th>Classes concernées</th>
-                                        <th>Montant</th>
-                                        <th>Statut</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="archive-table-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <div class="card">
-                        <h4>Archives - Paiements de salaires</h4>
-                        <div class="tabs">
-                            <div class="tab active" data-tab="archive-teachers">Enseignants</div>
-                            <div class="tab" data-tab="archive-workers">Personnels</div>
-                        </div>
-                        
-                        <div id="archive-teachers-tab" class="tab-content active">
+
+                        <div class="card">
+                            <h4>Liste des agents administratifs</h4>
+                            <div class="search-box" style="margin-bottom: 1rem;">
+                                <input type="text" id="agent-search" class="form-control" placeholder="Rechercher par nom, rôle ou email...">
+                            </div>
                             <div class="table-container">
                                 <table>
                                     <thead>
                                         <tr>
-                                            <th>Date</th>
                                             <th>Matricule</th>
+                                            <th>Photo</th>
                                             <th>Nom</th>
-                                            <th>Mois</th>
-                                            <th>Montant</th>
-                                            <th>Type</th>
+                                            <th>Rôle</th>
+                                            <th>Email</th>
+                                            <th>Statut</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="archive-teachers-table-body"></tbody>
+                                    <tbody id="agents-table-body">
+                                        <tr><td colspan="7" style="text-align: center;">Chargement des agents...</td></tr>
+                                    </tbody>
                                 </table>
                             </div>
                         </div>
+
+                        <div class="card">
+                            <h4>Paiement des salaires - Agents Administratifs</h4>
+                            <form id="agent-salary-form">
+                                <div class="form-row">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>Sélectionner un agent *</label>
+                                        <select id="agent-select" class="form-control" required>
+                                            <option value="">Choisir un agent</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>Année scolaire *</label>
+                                        <select id="agent-salary-year" class="form-control" required>
+                                            <option value="2023-2024">2023-2024</option>
+                                            <option value="2024-2025" selected>2024-2025</option>
+                                            <option value="2025-2026">2025-2026</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <button type="button" class="btn btn-info" style="margin-top: 28px;" onclick="loadAgentMonths()">
+                                            Voir disponibilités
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div id="agent-salary-info" class="hidden" style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin: 1rem 0;">
+                                    <h5>Informations de l'agent</h5>
+                                    <div class="form-row">
+                                        <div class="form-group" style="flex: 2;">
+                                            <label>Nom complet</label>
+                                            <input type="text" id="agent-found-name" class="form-control" readonly>
+                                        </div>
+                                        <div class="form-group" style="flex: 1;">
+                                            <label>Rôle</label>
+                                            <input type="text" id="agent-found-role" class="form-control" readonly>
+                                        </div>
+                                        <div class="form-group" style="flex: 1;">
+                                            <label>Email</label>
+                                            <input type="text" id="agent-found-email" class="form-control" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Mois disponibles pour paiement</label>
+                                        <div id="agent-available-months" class="months-selector">
+                                            <!-- Mois chargés dynamiquement -->
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>Mois à payer *</label>
+                                        <select id="agent-salary-month" class="form-control" required>
+                                            <option value="">Sélectionner</option>
+                                            <option value="janvier">Janvier</option>
+                                            <option value="février">Février</option>
+                                            <option value="mars">Mars</option>
+                                            <option value="avril">Avril</option>
+                                            <option value="mai">Mai</option>
+                                            <option value="juin">Juin</option>
+                                            <option value="juillet">Juillet</option>
+                                            <option value="août">Août</option>
+                                            <option value="septembre">Septembre</option>
+                                            <option value="octobre">Octobre</option>
+                                            <option value="novembre">Novembre</option>
+                                            <option value="décembre">Décembre</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>Montant du salaire ($) *</label>
+                                        <div class="currency-input-group">
+                                            <span class="currency-symbol">$</span>
+                                            <input type="number" id="agent-salary-amount" class="form-control currency-input" step="0.01" min="0" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="flex: 2;">
+                                        <label>Description (optionnel)</label>
+                                        <input type="text" id="agent-salary-description" class="form-control" placeholder="Ex: Salaire mensuel">
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    Valider le paiement
+                                </button>
+                            </form>
+                        </div>
                         
-                        <div id="archive-workers-tab" class="tab-content">
+                        <div class="card">
+                            <h4>Historique des paiements - Agents Administratifs</h4>
+                            <div class="search-box" style="margin-bottom: 1rem;">
+                                <input type="text" id="agent-salary-search" class="form-control" placeholder="Rechercher par nom ou rôle...">
+                            </div>
                             <div class="table-container">
                                 <table>
                                     <thead>
@@ -688,13 +836,15 @@
                                             <th>Date</th>
                                             <th>Matricule</th>
                                             <th>Nom</th>
+                                            <th>Rôle</th>
+                                            <th>Année</th>
                                             <th>Mois</th>
                                             <th>Montant</th>
-                                            <th>Fonction</th>
+                                            <th>Statut</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="archive-workers-table-body"></tbody>
+                                    <tbody id="agent-salaries-table-body"></tbody>
                                 </table>
                             </div>
                         </div>
@@ -731,6 +881,23 @@
                         <div style="text-align: center; margin-top: 1rem;">
                             <button id="print-worker-card-btn" class="btn btn-primary">Imprimer la carte</button>
                             <button id="back-worker-card-btn" class="btn btn-secondary">Fermer</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal pour la carte de service des agents -->
+                <div id="service-card-modal" class="modal hidden">
+                    <div class="modal-content" style="max-width: 600px;">
+                        <div class="modal-header">
+                            <h3>Carte de service - Agent Administratif</h3>
+                            <button class="close-modal">&times;</button>
+                        </div>
+                        <div id="service-card-content">
+                            <!-- Contenu généré dynamiquement -->
+                        </div>
+                        <div style="text-align: center; margin-top: 1rem;">
+                            <button id="print-service-card-btn" class="btn btn-primary">Imprimer la carte</button>
+                            <button id="back-service-card-btn" class="btn btn-secondary">Fermer</button>
                         </div>
                     </div>
                 </div>
@@ -848,7 +1015,7 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, query, where, addDoc, serverTimestamp, doc, updateDoc, setDoc, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-        // CONFIGURATION FIREBASE (identique à index.html)
+        // CONFIGURATION FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyBn7VIddclO7KtrXb5sibCr9SjVLjOy-qI",
             authDomain: "theo1d.firebaseapp.com",
@@ -911,17 +1078,41 @@
         let editWorkerPhotoFile = null;
         let lastCreatedWorker = null;
         let lastCreatedSalary = null;
+        const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
         // 5. GESTION DE L'AUTHENTIFICATION
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
+                await loadUserInfo();
                 initializeAppData();
             } else {
-                // Redirection vers la page de connexion si non authentifié
                 window.location.href = 'index.html';
             }
         });
+
+        // Charger les infos de l'utilisateur connecté
+        async function loadUserInfo() {
+            try {
+                const roles = ['secretary', 'admin', 'discipline', 'study'];
+                for (const role of roles) {
+                    const q = query(collection(db, role), where('uid', '==', currentUser.uid));
+                    const snap = await getDocs(q);
+                    if (!snap.empty) {
+                        const userData = snap.docs[0].data();
+                        document.getElementById('user-name').textContent = userData.fullName || currentUser.email;
+                        if (userData.photoURL) {
+                            const userPhoto = document.getElementById('user-photo');
+                            userPhoto.src = userData.photoURL;
+                            userPhoto.style.display = 'block';
+                        }
+                        break;
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur chargement infos utilisateur:', error);
+            }
+        }
 
         // 6. FONCTIONS UTILITAIRES
         function showAlert(message, type = 'info') {
@@ -950,8 +1141,8 @@
             loadClassesForCommunique();
             loadTeacherSalaries();
             loadWorkerSalaries();
-            loadCommuniqueArchives();
-            loadSalaryArchives();
+            loadAgentSalaries();
+            loadAgentsList();
         }
 
         // 8. GESTION DES PHOTOS
@@ -988,7 +1179,6 @@
             const workerFunction = document.getElementById('worker-function').value;
             const description = document.getElementById('worker-description').value;
             
-            // Validation
             if (!fullName || !birthdate || !birthplace || !gender || !address || !phone || !workerFunction) {
                 showAlert("Veuillez remplir tous les champs obligatoires (*)", "error");
                 return;
@@ -1001,12 +1191,10 @@
                 submitBtn.textContent = 'Création en cours...';
                 submitBtn.disabled = true;
                 
-                // Générer le matricule
                 const workersSnap = await getDocs(collection(db, 'workers'));
                 const workerCount = workersSnap.size + 1;
                 const matricule = `PER${workerCount.toString().padStart(3, '0')}`;
                 
-                // Uploader la photo
                 let photoURL = null;
                 if (workerPhotoFile) {
                     try {
@@ -1016,7 +1204,6 @@
                     }
                 }
                 
-                // Créer le personnel dans Firestore
                 const workerData = {
                     matricule,
                     fullName,
@@ -1037,10 +1224,8 @@
                 const workerRef = doc(db, 'workers', matricule);
                 await setDoc(workerRef, workerData);
                 
-                // Sauvegarder pour l'affichage
                 lastCreatedWorker = { ...workerData, id: matricule };
                 
-                // Afficher le message de succès
                 document.getElementById('worker-matricule').textContent = matricule;
                 document.getElementById('worker-fullname').textContent = fullName;
                 document.getElementById('worker-function-display').textContent = workerFunction;
@@ -1048,12 +1233,10 @@
                 
                 showAlert(`Personnel créé avec succès ! Matricule: ${matricule}`, 'success');
                 
-                // Réinitialiser le formulaire
                 document.getElementById('worker-form').reset();
                 workerPhotoFile = null;
                 document.getElementById('worker-photo-preview').innerHTML = '<i class="fas fa-user"></i>';
                 
-                // Recharger la liste
                 loadWorkersList();
                 
             } catch (error) {
@@ -1097,11 +1280,12 @@
                             <td>${data.fullName}</td>
                             <td>${data.function}</td>
                             <td>${data.phone}</td>
-                            <td>${data.hiredDate}</td>
+                            <td>${data.hiredDate || 'N/A'}</td>
                             <td>${statusBadge}</td>
                             <td class="action-buttons">
                                 <button class="btn btn-primary" onclick="viewWorkerDetails('${data.matricule}')">Détails</button>
                                 <button class="btn btn-warning" onclick="editWorker('${data.matricule}')">Modifier</button>
+                                <button class="btn btn-success" onclick="printWorkerServiceCard('${data.matricule}')">Carte</button>
                             </td>
                         </tr>
                     `;
@@ -1109,7 +1293,6 @@
                 
                 tableBody.innerHTML = html;
                 
-                // Recherche
                 document.getElementById('worker-search').addEventListener('input', (e) => {
                     const searchTerm = e.target.value.toLowerCase();
                     const rows = tableBody.querySelectorAll('tr');
@@ -1126,17 +1309,112 @@
             }
         }
 
-        // 11. CHARGEMENT DES CLASSES POUR LE COMMUNIQUÉ
+        // 11. CHARGEMENT DE LA LISTE DES AGENTS ADMINISTRATIFS (CORRIGÉ)
+        async function loadAgentsList() {
+            const tableBody = document.getElementById('agents-table-body');
+            const agentSelect = document.getElementById('agent-select');
+            
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Chargement des agents...</td></tr>';
+            agentSelect.innerHTML = '<option value="">Choisir un agent</option>';
+            
+            try {
+                const roles = [
+                    { collection: 'admin', role: 'Administrateur' },
+                    { collection: 'secretary', role: 'Secrétaire' },
+                    { collection: 'discipline', role: 'Discipline' },
+                    { collection: 'study', role: 'Étude' }
+                ];
+                
+                let allAgents = [];
+                let html = '';
+                
+                for (const role of roles) {
+                    try {
+                        const snap = await getDocs(collection(db, role));
+                        console.log(`Agents ${role.role} trouvés:`, snap.size);
+                        
+                        snap.forEach(doc => {
+                            const data = doc.data();
+                            
+                            // Générer un matricule si non existant
+                            const matricule = data.matricule || `${role.collection.substring(0,3).toUpperCase()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+                            
+                            // Photo
+                            const photoHTML = data.photoURL 
+                                ? `<img src="${data.photoURL}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">`
+                                : '<div style="width: 40px; height: 40px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center;"><i class="fas fa-user"></i></div>';
+                            
+                            html += `
+                                <tr>
+                                    <td>${matricule}</td>
+                                    <td>${photoHTML}</td>
+                                    <td>${data.fullName || 'Nom inconnu'}</td>
+                                    <td>${role.role}</td>
+                                    <td>${data.email || 'Email non renseigné'}</td>
+                                    <td><span class="badge badge-success">Actif</span></td>
+                                    <td class="action-buttons">
+                                        <button class="btn btn-success" onclick="printAgentServiceCard('${doc.id}', '${role.collection}')">Carte</button>
+                                    </td>
+                                </tr>
+                            `;
+                            
+                            // Ajouter au select pour le paiement
+                            const option = document.createElement('option');
+                            option.value = `${doc.id}|${role.collection}`;
+                            option.textContent = `${data.fullName || 'Nom inconnu'} (${role.role})`;
+                            agentSelect.appendChild(option);
+                            
+                            allAgents.push({
+                                id: doc.id,
+                                collection: role.collection,
+                                name: data.fullName || 'Nom inconnu',
+                                role: role.role
+                            });
+                        });
+                    } catch (roleError) {
+                        console.error(`Erreur chargement ${role.role}:`, roleError);
+                    }
+                }
+                
+                if (html === '') {
+                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Aucun agent trouvé dans la base de données.</td></tr>';
+                    // Ajouter des options de test si nécessaire
+                    const testOption = document.createElement('option');
+                    testOption.value = 'test|test';
+                    testOption.textContent = '--- Aucun agent disponible ---';
+                    agentSelect.appendChild(testOption);
+                } else {
+                    tableBody.innerHTML = html;
+                }
+                
+                // Recherche
+                const searchInput = document.getElementById('agent-search');
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => {
+                        const searchTerm = e.target.value.toLowerCase();
+                        const rows = tableBody.querySelectorAll('tr');
+                        
+                        rows.forEach(row => {
+                            const text = row.textContent.toLowerCase();
+                            row.style.display = text.includes(searchTerm) ? '' : 'none';
+                        });
+                    });
+                }
+                
+            } catch (error) {
+                console.error("Erreur détaillée chargement agents:", error);
+                tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Erreur de chargement: ${error.message}</td></tr>`;
+            }
+        }
+
+        // 12. CHARGEMENT DES CLASSES POUR LE COMMUNIQUÉ
         async function loadClassesForCommunique() {
             const container = document.getElementById('communique-classes-container');
             container.innerHTML = 'Chargement des classes...';
             
             try {
-                // Classes secondaires
                 const classesSnap = await getDocs(collection(db, 'classes'));
-                // Classes primaires
                 const primaryClassesSnap = await getDocs(collection(db, 'primary_classes'));
-                // Classes maternelles
                 const kindergartenClassesSnap = await getDocs(collection(db, 'kindergarten_classes'));
                 
                 let html = '';
@@ -1179,7 +1457,7 @@
             }
         }
 
-        // 12. PRÉVISUALISATION DU COMMUNIQUÉ
+        // 13. PRÉVISUALISATION DU COMMUNIQUÉ
         window.previewCommunique = function() {
             const feeType = document.getElementById('communique-fee-type').value;
             const otherFee = document.getElementById('communique-other-fee').value;
@@ -1189,7 +1467,6 @@
             const amount = document.getElementById('communique-amount').value;
             const message = document.getElementById('communique-message').value;
             
-            // Récupérer les classes sélectionnées
             const selectedClasses = [];
             document.querySelectorAll('#communique-classes-container .class-checkbox:checked').forEach(checkbox => {
                 selectedClasses.push(checkbox.value);
@@ -1202,7 +1479,6 @@
             
             const finalFeeType = feeType === 'Autres' ? otherFee : feeType;
             
-            // Formatage de la date
             const deadlineDate = new Date(deadline);
             const formattedDeadline = deadlineDate.toLocaleDateString('fr-FR', {
                 day: '2-digit',
@@ -1217,7 +1493,6 @@
                 year: 'numeric'
             });
             
-            // Construction du communiqué
             const communiqueHTML = `
                 <div class="communique-header">
                     <img src="R.png" alt="Logo CS la Colombe" class="communique-logo">
@@ -1271,7 +1546,7 @@
             document.getElementById('communique-form').style.display = 'none';
         };
 
-        // 13. IMPRESSION DU COMMUNIQUÉ
+        // 14. IMPRESSION DU COMMUNIQUÉ
         window.printCommunique = function() {
             const communiqueContent = document.getElementById('communique-preview-content').innerHTML;
             const printWindow = window.open('', '_blank');
@@ -1345,13 +1620,13 @@
             printWindow.document.close();
         };
 
-        // 14. FERMETURE DE LA PRÉVISUALISATION
+        // 15. FERMETURE DE LA PRÉVISUALISATION
         window.closePreview = function() {
             document.getElementById('communique-preview-card').classList.add('hidden');
             document.getElementById('communique-form').style.display = 'block';
         };
 
-        // 15. PUBLICATION DU COMMUNIQUÉ
+        // 16. PUBLICATION DU COMMUNIQUÉ
         document.getElementById('communique-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -1363,7 +1638,6 @@
             const amount = parseFloat(document.getElementById('communique-amount').value);
             const message = document.getElementById('communique-message').value;
             
-            // Récupérer les classes sélectionnées
             const selectedClasses = [];
             document.querySelectorAll('#communique-classes-container .class-checkbox:checked').forEach(checkbox => {
                 selectedClasses.push(checkbox.value);
@@ -1377,7 +1651,6 @@
             const finalFeeType = feeType === 'Autres' ? otherFee : feeType;
             
             try {
-                // Enregistrer le communiqué
                 const communiqueData = {
                     feeType: finalFeeType,
                     deadline,
@@ -1391,24 +1664,60 @@
                     status: 'published'
                 };
                 
-                await addDoc(collection(db, 'communiques'), communiqueData);
+                const communiqueId = `comm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const communiqueRef = doc(db, 'parent_communiques', communiqueId);
                 
-                // Trouver les élèves non payés pour ces classes
-                const unpaidStudents = await findUnpaidStudents(finalFeeType, month, selectedClasses);
+                await setDoc(communiqueRef, communiqueData);
                 
-                // Envoyer le communiqué aux parents concernés
-                await sendCommuniqueToParents(communiqueData, unpaidStudents);
+                const concernedParents = await findParentsForClasses(selectedClasses);
                 
-                showAlert(`Communiqué publié avec succès ! ${unpaidStudents.length} parent(s) concerné(s).`, 'success');
+                for (const parent of concernedParents) {
+                    const relationId = `${parent.matricule}_${communiqueId}`;
+                    const relationRef = doc(db, 'parent_communique_relations', relationId);
+                    
+                    await setDoc(relationRef, {
+                        parentId: parent.matricule,
+                        parentName: parent.fullName,
+                        communiqueId: communiqueId,
+                        studentIds: parent.childrenMatricules || [],
+                        studentNames: parent.childrenNames || [],
+                        studentClasses: parent.childrenClasses || [],
+                        status: 'pending',
+                        createdAt: serverTimestamp(),
+                        expirationDate: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000),
+                        feeType: finalFeeType,
+                        amount: amount,
+                        month: month,
+                        deadline: deadline
+                    });
+                    
+                    for (let i = 0; i < parent.childrenMatricules.length; i++) {
+                        const studentRelationId = `${parent.childrenMatricules[i]}_${communiqueId}`;
+                        const studentRelationRef = doc(db, 'student_communique_relations', studentRelationId);
+                        
+                        await setDoc(studentRelationRef, {
+                            studentId: parent.childrenMatricules[i],
+                            studentName: parent.childrenNames[i],
+                            studentClass: parent.childrenClasses[i],
+                            parentId: parent.matricule,
+                            parentName: parent.fullName,
+                            communiqueId: communiqueId,
+                            feeType: finalFeeType,
+                            amount: amount,
+                            month: month,
+                            deadline: deadline,
+                            status: 'pending',
+                            createdAt: serverTimestamp()
+                        });
+                    }
+                }
                 
-                // Réinitialiser le formulaire
+                showAlert(`Communiqué publié avec succès ! ${concernedParents.length} parent(s) concerné(s).`, 'success');
+                
                 document.getElementById('communique-form').reset();
                 document.querySelectorAll('#communique-classes-container .class-checkbox').forEach(checkbox => {
                     checkbox.checked = false;
                 });
-                
-                // Recharger les archives
-                loadCommuniqueArchives();
                 
             } catch (error) {
                 console.error('Erreur publication communiqué:', error);
@@ -1416,351 +1725,135 @@
             }
         });
 
-        // 16. TROUVER LES ÉLÈVES NON PAYÉS
-        async function findUnpaidStudents(feeType, month, classes) {
-            const unpaidStudents = [];
+        // 17. TROUVER LES PARENTS CONCERNÉS
+        async function findParentsForClasses(classes) {
+            const concernedParents = [];
+            const parentMap = new Map();
             
             try {
-                // Rechercher dans les élèves secondaires
-                const secondaryStudents = await getDocs(query(collection(db, 'students'), where('status', '==', 'active')));
-                
-                for (const studentDoc of secondaryStudents.docs) {
-                    const studentData = studentDoc.data();
+                for (const className of classes) {
+                    const studentsQuery = query(
+                        collection(db, 'students'),
+                        where('class', '==', className),
+                        where('status', '==', 'active')
+                    );
                     
-                    // Vérifier si l'élève est dans une classe concernée
-                    if (classes.includes(studentData.class)) {
-                        // Vérifier si l'élève a déjà payé ce frais pour ce mois
-                        const paymentQuery = query(
-                            collection(db, 'payments'),
-                            where('studentId', '==', studentData.matricule),
-                            where('paymentType', '==', feeType),
-                            where('month', '==', month)
-                        );
+                    const studentsSnap = await getDocs(studentsQuery);
+                    
+                    for (const studentDoc of studentsSnap.docs) {
+                        const studentData = studentDoc.data();
                         
-                        const paymentSnap = await getDocs(paymentQuery);
-                        
-                        if (paymentSnap.empty) {
-                            unpaidStudents.push({
-                                id: studentDoc.id,
-                                matricule: studentData.matricule,
-                                fullName: studentData.fullName,
-                                class: studentData.class,
-                                parentPhone: studentData.parentPhone,
-                                parentName: studentData.parentName,
-                                studentType: 'secondary'
-                            });
+                        if (studentData.parentId) {
+                            if (!parentMap.has(studentData.parentId)) {
+                                const parentDoc = await getDoc(doc(db, 'parents', studentData.parentId));
+                                
+                                if (parentDoc.exists()) {
+                                    const parentData = parentDoc.data();
+                                    parentMap.set(studentData.parentId, {
+                                        matricule: studentData.parentId,
+                                        fullName: parentData.fullName || 'Parent inconnu',
+                                        childrenMatricules: [studentData.matricule],
+                                        childrenNames: [studentData.fullName],
+                                        childrenClasses: [studentData.class]
+                                    });
+                                }
+                            } else {
+                                const parent = parentMap.get(studentData.parentId);
+                                parent.childrenMatricules.push(studentData.matricule);
+                                parent.childrenNames.push(studentData.fullName);
+                                parent.childrenClasses.push(studentData.class);
+                            }
                         }
                     }
                 }
                 
-                // Rechercher dans les élèves primaires
-                const primaryStudents = await getDocs(query(collection(db, 'primary_students'), where('status', '==', 'active')));
-                
-                for (const studentDoc of primaryStudents.docs) {
-                    const studentData = studentDoc.data();
+                for (const className of classes) {
+                    const studentsQuery = query(
+                        collection(db, 'primary_students'),
+                        where('class', '==', className),
+                        where('status', '==', 'active')
+                    );
                     
-                    if (classes.includes(studentData.class)) {
-                        const paymentQuery = query(
-                            collection(db, 'payments'),
-                            where('studentId', '==', studentData.matricule),
-                            where('paymentType', '==', feeType),
-                            where('month', '==', month)
-                        );
+                    const studentsSnap = await getDocs(studentsQuery);
+                    
+                    for (const studentDoc of studentsSnap.docs) {
+                        const studentData = studentDoc.data();
                         
-                        const paymentSnap = await getDocs(paymentQuery);
-                        
-                        if (paymentSnap.empty) {
-                            unpaidStudents.push({
-                                id: studentDoc.id,
-                                matricule: studentData.matricule,
-                                fullName: studentData.fullName,
-                                class: studentData.class,
-                                parentPhone: studentData.parentPhone,
-                                parentName: studentData.parentName,
-                                studentType: 'primary'
-                            });
+                        if (studentData.parentId) {
+                            if (!parentMap.has(studentData.parentId)) {
+                                const parentDoc = await getDoc(doc(db, 'parents', studentData.parentId));
+                                
+                                if (parentDoc.exists()) {
+                                    const parentData = parentDoc.data();
+                                    parentMap.set(studentData.parentId, {
+                                        matricule: studentData.parentId,
+                                        fullName: parentData.fullName || 'Parent inconnu',
+                                        childrenMatricules: [studentData.matricule],
+                                        childrenNames: [studentData.fullName],
+                                        childrenClasses: [studentData.class]
+                                    });
+                                }
+                            } else {
+                                const parent = parentMap.get(studentData.parentId);
+                                parent.childrenMatricules.push(studentData.matricule);
+                                parent.childrenNames.push(studentData.fullName);
+                                parent.childrenClasses.push(studentData.class);
+                            }
                         }
                     }
                 }
                 
-            } catch (error) {
-                console.error('Erreur recherche élèves non payés:', error);
-            }
-            
-            return unpaidStudents;
-        }
-// 15. PUBLICATION DU COMMUNIQUÉ - MODIFIÉE
-document.getElementById('communique-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const feeType = document.getElementById('communique-fee-type').value;
-    const otherFee = document.getElementById('communique-other-fee').value;
-    const deadline = document.getElementById('communique-deadline').value;
-    const schoolYear = document.getElementById('communique-school-year').value;
-    const month = document.getElementById('communique-month').value;
-    const amount = parseFloat(document.getElementById('communique-amount').value);
-    const message = document.getElementById('communique-message').value;
-    
-    // Récupérer les classes sélectionnées
-    const selectedClasses = [];
-    document.querySelectorAll('#communique-classes-container .class-checkbox:checked').forEach(checkbox => {
-        selectedClasses.push(checkbox.value);
-    });
-    
-    if (!feeType || !deadline || !schoolYear || !month || !amount || selectedClasses.length === 0) {
-        showAlert("Veuillez remplir tous les champs obligatoires", "error");
-        return;
-    }
-    
-    const finalFeeType = feeType === 'Autres' ? otherFee : feeType;
-    
-    try {
-        // 1. Enregistrer le communiqué principal
-        const communiqueData = {
-            feeType: finalFeeType,
-            deadline,
-            schoolYear,
-            month,
-            amount,
-            classes: selectedClasses,
-            message,
-            publishedBy: currentUser.uid,
-            publishedAt: serverTimestamp(),
-            status: 'published'
-        };
-        
-        // Ajouter avec un ID personnalisé pour référence facile
-        const communiqueId = `comm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const communiqueRef = doc(db, 'parent_communiques', communiqueId);
-        
-        await setDoc(communiqueRef, communiqueData);
-        
-        // 2. Trouver tous les parents concernés par les classes sélectionnées
-        const concernedParents = await findParentsForClasses(selectedClasses);
-        
-        // 3. Pour chaque parent, créer une relation parent-communiqué
-        for (const parent of concernedParents) {
-            const relationId = `${parent.matricule}_${communiqueId}`;
-            const relationRef = doc(db, 'parent_communique_relations', relationId);
-            
-            await setDoc(relationRef, {
-                parentId: parent.matricule,
-                parentName: parent.fullName,
-                communiqueId: communiqueId,
-                studentIds: parent.childrenMatricules || [],
-                studentNames: parent.childrenNames || [],
-                studentClasses: parent.childrenClasses || [],
-                status: 'pending', // 'pending', 'paid', 'overdue'
-                createdAt: serverTimestamp(),
-                expirationDate: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000), // 30 jours
-                feeType: finalFeeType,
-                amount: amount,
-                month: month,
-                deadline: deadline
-            });
-            
-            // 4. Pour chaque enfant, créer une relation élève-communiqué
-            for (let i = 0; i < parent.childrenMatricules.length; i++) {
-                const studentRelationId = `${parent.childrenMatricules[i]}_${communiqueId}`;
-                const studentRelationRef = doc(db, 'student_communique_relations', studentRelationId);
+                for (const className of classes) {
+                    const studentsQuery = query(
+                        collection(db, 'kindergarten_students'),
+                        where('class', '==', className),
+                        where('status', '==', 'active')
+                    );
+                    
+                    const studentsSnap = await getDocs(studentsQuery);
+                    
+                    for (const studentDoc of studentsSnap.docs) {
+                        const studentData = studentDoc.data();
+                        
+                        if (studentData.parentId) {
+                            if (!parentMap.has(studentData.parentId)) {
+                                const parentDoc = await getDoc(doc(db, 'parents', studentData.parentId));
+                                
+                                if (parentDoc.exists()) {
+                                    const parentData = parentDoc.data();
+                                    parentMap.set(studentData.parentId, {
+                                        matricule: studentData.parentId,
+                                        fullName: parentData.fullName || 'Parent inconnu',
+                                        childrenMatricules: [studentData.matricule],
+                                        childrenNames: [studentData.fullName],
+                                        childrenClasses: [studentData.class]
+                                    });
+                                }
+                            } else {
+                                const parent = parentMap.get(studentData.parentId);
+                                parent.childrenMatricules.push(studentData.matricule);
+                                parent.childrenNames.push(studentData.fullName);
+                                parent.childrenClasses.push(studentData.class);
+                            }
+                        }
+                    }
+                }
                 
-                await setDoc(studentRelationRef, {
-                    studentId: parent.childrenMatricules[i],
-                    studentName: parent.childrenNames[i],
-                    studentClass: parent.childrenClasses[i],
-                    parentId: parent.matricule,
-                    parentName: parent.fullName,
-                    communiqueId: communiqueId,
-                    feeType: finalFeeType,
-                    amount: amount,
-                    month: month,
-                    deadline: deadline,
-                    status: 'pending',
-                    createdAt: serverTimestamp()
+                parentMap.forEach(parent => {
+                    concernedParents.push(parent);
                 });
-            }
-        }
-        
-        showAlert(`Communiqué publié avec succès ! ${concernedParents.length} parent(s) concerné(s).`, 'success');
-        
-        // 5. Réinitialiser le formulaire
-        document.getElementById('communique-form').reset();
-        document.querySelectorAll('#communique-classes-container .class-checkbox').forEach(checkbox => {
-            checkbox.checked = false;
-        });
-        
-        // 6. Recharger les archives
-        loadCommuniqueArchives();
-        
-    } catch (error) {
-        console.error('Erreur publication communiqué:', error);
-        showAlert('Erreur lors de la publication: ' + error.message, 'error');
-    }
-});
-
-// Fonction pour trouver les parents concernés par les classes
-async function findParentsForClasses(classes) {
-    const concernedParents = [];
-    const parentMap = new Map(); // Pour éviter les doublons
-    
-    try {
-        // Rechercher dans les élèves secondaires
-        for (const className of classes) {
-            const studentsQuery = query(
-                collection(db, 'students'),
-                where('class', '==', className),
-                where('status', '==', 'active')
-            );
-            
-            const studentsSnap = await getDocs(studentsQuery);
-            
-            for (const studentDoc of studentsSnap.docs) {
-                const studentData = studentDoc.data();
-                
-                if (studentData.parentId) {
-                    if (!parentMap.has(studentData.parentId)) {
-                        // Récupérer les informations du parent
-                        const parentDoc = await getDoc(doc(db, 'parents', studentData.parentId));
-                        
-                        if (parentDoc.exists()) {
-                            const parentData = parentDoc.data();
-                            parentMap.set(studentData.parentId, {
-                                matricule: studentData.parentId,
-                                fullName: parentData.fullName || 'Parent inconnu',
-                                childrenMatricules: [studentData.matricule],
-                                childrenNames: [studentData.fullName],
-                                childrenClasses: [studentData.class]
-                            });
-                        }
-                    } else {
-                        // Ajouter l'enfant supplémentaire au parent existant
-                        const parent = parentMap.get(studentData.parentId);
-                        parent.childrenMatricules.push(studentData.matricule);
-                        parent.childrenNames.push(studentData.fullName);
-                        parent.childrenClasses.push(studentData.class);
-                    }
-                }
-            }
-        }
-        
-        // Rechercher dans les élèves primaires
-        for (const className of classes) {
-            const studentsQuery = query(
-                collection(db, 'primary_students'),
-                where('class', '==', className),
-                where('status', '==', 'active')
-            );
-            
-            const studentsSnap = await getDocs(studentsQuery);
-            
-            for (const studentDoc of studentsSnap.docs) {
-                const studentData = studentDoc.data();
-                
-                if (studentData.parentId) {
-                    if (!parentMap.has(studentData.parentId)) {
-                        const parentDoc = await getDoc(doc(db, 'parents', studentData.parentId));
-                        
-                        if (parentDoc.exists()) {
-                            const parentData = parentDoc.data();
-                            parentMap.set(studentData.parentId, {
-                                matricule: studentData.parentId,
-                                fullName: parentData.fullName || 'Parent inconnu',
-                                childrenMatricules: [studentData.matricule],
-                                childrenNames: [studentData.fullName],
-                                childrenClasses: [studentData.class]
-                            });
-                        }
-                    } else {
-                        const parent = parentMap.get(studentData.parentId);
-                        parent.childrenMatricules.push(studentData.matricule);
-                        parent.childrenNames.push(studentData.fullName);
-                        parent.childrenClasses.push(studentData.class);
-                    }
-                }
-            }
-        }
-        
-        // Rechercher dans les élèves maternelles
-        for (const className of classes) {
-            const studentsQuery = query(
-                collection(db, 'kindergarten_students'),
-                where('class', '==', className),
-                where('status', '==', 'active')
-            );
-            
-            const studentsSnap = await getDocs(studentsQuery);
-            
-            for (const studentDoc of studentsSnap.docs) {
-                const studentData = studentDoc.data();
-                
-                if (studentData.parentId) {
-                    if (!parentMap.has(studentData.parentId)) {
-                        const parentDoc = await getDoc(doc(db, 'parents', studentData.parentId));
-                        
-                        if (parentDoc.exists()) {
-                            const parentData = parentDoc.data();
-                            parentMap.set(studentData.parentId, {
-                                matricule: studentData.parentId,
-                                fullName: parentData.fullName || 'Parent inconnu',
-                                childrenMatricules: [studentData.matricule],
-                                childrenNames: [studentData.fullName],
-                                childrenClasses: [studentData.class]
-                            });
-                        }
-                    } else {
-                        const parent = parentMap.get(studentData.parentId);
-                        parent.childrenMatricules.push(studentData.matricule);
-                        parent.childrenNames.push(studentData.fullName);
-                        parent.childrenClasses.push(studentData.class);
-                    }
-                }
-            }
-        }
-        
-        // Convertir la Map en Array
-        parentMap.forEach(parent => {
-            concernedParents.push(parent);
-        });
-        
-    } catch (error) {
-        console.error('Erreur recherche parents:', error);
-    }
-    
-    return concernedParents;
-}
-
-        // 17. ENVOYER LE COMMUNIQUÉ AUX PARENTS
-        async function sendCommuniqueToParents(communiqueData, unpaidStudents) {
-            try {
-                // Enregistrer l'envoi pour chaque parent
-                for (const student of unpaidStudents) {
-                    const notificationData = {
-                        communiqueData: {
-                            feeType: communiqueData.feeType,
-                            deadline: communiqueData.deadline,
-                            month: communiqueData.month,
-                            amount: communiqueData.amount,
-                            message: communiqueData.message
-                        },
-                        studentInfo: student,
-                        sentAt: serverTimestamp(),
-                        status: 'sent'
-                    };
-                    
-                    await addDoc(collection(db, 'communique_notifications'), notificationData);
-                }
-                
-                // Ici, vous pourriez ajouter l'envoi de SMS ou d'emails
-                // Pour l'instant, on se contente de l'enregistrement
                 
             } catch (error) {
-                console.error('Erreur envoi communiqué:', error);
+                console.error('Erreur recherche parents:', error);
             }
+            
+            return concernedParents;
         }
 
         // 18. RECHERCHE D'ENSEIGNANT POUR PAIEMENT
         window.findTeacher = async function() {
             const matricule = document.getElementById('teacher-matricule').value.trim();
+            const year = document.getElementById('teacher-salary-year').value;
             
             if (!matricule) {
                 showAlert("Veuillez entrer un matricule", "error");
@@ -1768,17 +1861,14 @@ async function findParentsForClasses(classes) {
             }
             
             try {
-                // Chercher dans les enseignants secondaires
                 let teacherDoc = await getDoc(doc(db, 'teachers', matricule));
                 let teacherType = 'secondary';
                 
-                // Si pas trouvé, chercher dans les primaires
                 if (!teacherDoc.exists()) {
                     teacherDoc = await getDoc(doc(db, 'primary_teachers', matricule));
                     teacherType = 'primary';
                 }
                 
-                // Si pas trouvé, chercher dans les maternelles
                 if (!teacherDoc.exists()) {
                     teacherDoc = await getDoc(doc(db, 'kindergarten_teachers', matricule));
                     teacherType = 'kindergarten';
@@ -1792,18 +1882,16 @@ async function findParentsForClasses(classes) {
                 
                 const teacherData = teacherDoc.data();
                 
-                // Afficher les informations
                 document.getElementById('teacher-found-name').value = teacherData.fullName;
                 document.getElementById('teacher-found-type').value = teacherType === 'secondary' ? 'Secondaire' : 
                                                                     teacherType === 'primary' ? 'Primaire' : 'Maternelle';
                 document.getElementById('teacher-found-classes').value = teacherData.classes ? teacherData.classes.join(', ') : 'Aucune';
                 document.getElementById('teacher-info').classList.remove('hidden');
                 
-                // Vérifier si déjà payé pour ce mois
-                const month = document.getElementById('teacher-salary-month').value;
-                if (month) {
-                    await checkTeacherSalaryPayment(matricule, month);
-                }
+                await loadTeacherPaidMonths(matricule, year);
+                
+                const defaultSalary = document.getElementById('default-teacher-salary').value;
+                document.getElementById('teacher-salary-amount').value = defaultSalary;
                 
             } catch (error) {
                 console.error('Erreur recherche enseignant:', error);
@@ -1811,30 +1899,73 @@ async function findParentsForClasses(classes) {
             }
         };
 
-        // 19. VÉRIFIER SI L'ENSEIGNANT EST DÉJÀ PAYÉ
-        async function checkTeacherSalaryPayment(teacherMatricule, month) {
+        // 19. CHARGER LES MOIS PAYÉS POUR ENSEIGNANT
+        async function loadTeacherPaidMonths(teacherMatricule = null, year = null) {
+            const matricule = teacherMatricule || document.getElementById('teacher-matricule').value.trim();
+            const schoolYear = year || document.getElementById('teacher-salary-year').value;
+            
+            if (!matricule || !schoolYear) return;
+            
             try {
                 const salaryQuery = query(
                     collection(db, 'teacher_salaries'),
-                    where('teacherMatricule', '==', teacherMatricule),
-                    where('month', '==', month)
+                    where('teacherMatricule', '==', matricule),
+                    where('schoolYear', '==', schoolYear)
                 );
                 
                 const salarySnap = await getDocs(salaryQuery);
+                const paidMonths = new Set();
                 
-                if (!salarySnap.empty) {
-                    showAlert(`Attention: Cet enseignant a déjà été payé pour le mois de ${month}`, 'warning');
-                }
+                salarySnap.forEach(doc => {
+                    paidMonths.add(doc.data().month);
+                });
+                
+                const monthSelect = document.getElementById('teacher-salary-month');
+                const availableMonthsDiv = document.getElementById('teacher-available-months');
+                
+                availableMonthsDiv.innerHTML = '';
+                
+                MONTHS.forEach(month => {
+                    const isPaid = paidMonths.has(month);
+                    const chip = document.createElement('span');
+                    chip.className = `month-chip ${isPaid ? 'paid' : 'available'}`;
+                    chip.textContent = month.charAt(0).toUpperCase() + month.slice(1);
+                    if (!isPaid) {
+                        chip.onclick = () => {
+                            document.getElementById('teacher-salary-month').value = month;
+                        };
+                    }
+                    availableMonthsDiv.appendChild(chip);
+                });
+                
+                Array.from(monthSelect.options).forEach(option => {
+                    if (option.value && paidMonths.has(option.value)) {
+                        option.disabled = true;
+                        option.textContent = option.value + ' (Déjà payé)';
+                    } else {
+                        option.disabled = false;
+                        option.textContent = option.value;
+                    }
+                });
+                
             } catch (error) {
-                console.error('Erreur vérification paiement:', error);
+                console.error('Erreur chargement mois payés:', error);
             }
         }
 
-        // 20. PAIEMENT DES SALAIRES ENSEIGNANTS
+        // 20. SAUVEGARDER CONFIG SALAIRE ENSEIGNANT
+        window.saveTeacherSalaryConfig = function() {
+            const amount = document.getElementById('default-teacher-salary').value;
+            localStorage.setItem('defaultTeacherSalary', amount);
+            showAlert('Montant par défaut enregistré', 'success');
+        };
+
+        // 21. PAIEMENT DES SALAIRES ENSEIGNANTS
         document.getElementById('teacher-salary-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const month = document.getElementById('teacher-salary-month').value;
+            const schoolYear = document.getElementById('teacher-salary-year').value;
             const teacherMatricule = document.getElementById('teacher-matricule').value;
             const amount = parseFloat(document.getElementById('teacher-salary-amount').value);
             const description = document.getElementById('teacher-salary-description').value;
@@ -1845,7 +1976,6 @@ async function findParentsForClasses(classes) {
             }
             
             try {
-                // Vérifier que l'enseignant existe
                 let teacherDoc = await getDoc(doc(db, 'teachers', teacherMatricule));
                 let teacherType = 'secondary';
                 
@@ -1866,26 +1996,26 @@ async function findParentsForClasses(classes) {
                 
                 const teacherData = teacherDoc.data();
                 
-                // Vérifier si déjà payé pour ce mois
                 const salaryQuery = query(
                     collection(db, 'teacher_salaries'),
                     where('teacherMatricule', '==', teacherMatricule),
-                    where('month', '==', month)
+                    where('month', '==', month),
+                    where('schoolYear', '==', schoolYear)
                 );
                 
                 const salarySnap = await getDocs(salaryQuery);
                 
                 if (!salarySnap.empty) {
-                    showAlert(`Cet enseignant a déjà été payé pour le mois de ${month}`, 'error');
+                    showAlert(`Cet enseignant a déjà été payé pour ${month} ${schoolYear}`, 'error');
                     return;
                 }
                 
-                // Créer le paiement
                 const salaryData = {
                     teacherMatricule,
                     teacherName: teacherData.fullName,
                     teacherType,
                     month,
+                    schoolYear,
                     amount,
                     description,
                     paidBy: currentUser.uid,
@@ -1895,28 +2025,24 @@ async function findParentsForClasses(classes) {
                 
                 const salaryRef = await addDoc(collection(db, 'teacher_salaries'), salaryData);
                 
-                // Sauvegarder pour l'impression
                 lastCreatedSalary = { ...salaryData, id: salaryRef.id, type: 'teacher' };
                 
-                // Générer le bordereau
                 await generateSalaryReceipt(
                     teacherData.fullName,
                     teacherMatricule,
                     month,
                     amount,
                     description,
-                    'ENSEIGNANT'
+                    'ENSEIGNANT',
+                    schoolYear
                 );
                 
                 showAlert(`Salaire payé avec succès pour ${teacherData.fullName}`, 'success');
                 
-                // Réinitialiser le formulaire
                 document.getElementById('teacher-salary-form').reset();
                 document.getElementById('teacher-info').classList.add('hidden');
                 
-                // Recharger les listes
                 loadTeacherSalaries();
-                loadSalaryArchives();
                 
             } catch (error) {
                 console.error('Erreur paiement salaire:', error);
@@ -1924,16 +2050,16 @@ async function findParentsForClasses(classes) {
             }
         });
 
-        // 21. CHARGEMENT DES SALAIRES ENSEIGNANTS
+        // 22. CHARGEMENT DES SALAIRES ENSEIGNANTS
         async function loadTeacherSalaries() {
             const tableBody = document.getElementById('teacher-salaries-table-body');
-            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Chargement...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Chargement...</td></tr>';
             
             try {
                 const salariesSnap = await getDocs(query(collection(db, 'teacher_salaries'), orderBy('paidAt', 'desc')));
                 
                 if (salariesSnap.empty) {
-                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Aucun paiement enregistré.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Aucun paiement enregistré.</td></tr>';
                     return;
                 }
                 
@@ -1941,15 +2067,14 @@ async function findParentsForClasses(classes) {
                 salariesSnap.forEach(doc => {
                     const data = doc.data();
                     
-                    const statusBadge = data.status === 'paid' 
-                        ? '<span class="badge badge-success">Payé</span>' 
-                        : '<span class="badge badge-warning">En attente</span>';
+                    const statusBadge = '<span class="badge badge-success">Payé</span>';
                     
                     html += `
                         <tr>
                             <td>${formatDate(data.paidAt)}</td>
                             <td>${data.teacherMatricule}</td>
                             <td>${data.teacherName}</td>
+                            <td>${data.schoolYear || 'N/A'}</td>
                             <td>${data.month}</td>
                             <td class="currency-display">$${data.amount.toFixed(2)}</td>
                             <td>${statusBadge}</td>
@@ -1963,7 +2088,6 @@ async function findParentsForClasses(classes) {
                 
                 tableBody.innerHTML = html;
                 
-                // Recherche
                 document.getElementById('teacher-salary-search').addEventListener('input', (e) => {
                     const searchTerm = e.target.value.toLowerCase();
                     const rows = tableBody.querySelectorAll('tr');
@@ -1976,13 +2100,14 @@ async function findParentsForClasses(classes) {
                 
             } catch (error) {
                 console.error("Erreur chargement salaires enseignants:", error);
-                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Erreur de chargement</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Erreur de chargement</td></tr>';
             }
         }
 
-        // 22. RECHERCHE DE PERSONNEL POUR PAIEMENT
+        // 23. RECHERCHE DE PERSONNEL POUR PAIEMENT
         window.findWorkerForSalary = async function() {
             const matricule = document.getElementById('worker-salary-matricule').value.trim();
+            const year = document.getElementById('worker-salary-year').value;
             
             if (!matricule) {
                 showAlert("Veuillez entrer un matricule", "error");
@@ -2000,17 +2125,15 @@ async function findParentsForClasses(classes) {
                 
                 const workerData = workerDoc.data();
                 
-                // Afficher les informations
                 document.getElementById('worker-found-name').value = workerData.fullName;
                 document.getElementById('worker-found-function').value = workerData.function;
                 document.getElementById('worker-found-phone').value = workerData.phone;
                 document.getElementById('worker-salary-info').classList.remove('hidden');
                 
-                // Vérifier si déjà payé pour ce mois
-                const month = document.getElementById('worker-salary-month').value;
-                if (month) {
-                    await checkWorkerSalaryPayment(matricule, month);
-                }
+                await loadWorkerPaidMonths(matricule, year);
+                
+                const defaultSalary = document.getElementById('default-worker-salary').value;
+                document.getElementById('worker-salary-amount').value = defaultSalary;
                 
             } catch (error) {
                 console.error('Erreur recherche personnel:', error);
@@ -2018,30 +2141,73 @@ async function findParentsForClasses(classes) {
             }
         };
 
-        // 23. VÉRIFIER SI LE PERSONNEL EST DÉJÀ PAYÉ
-        async function checkWorkerSalaryPayment(workerMatricule, month) {
+        // 24. CHARGER LES MOIS PAYÉS POUR PERSONNEL
+        async function loadWorkerPaidMonths(workerMatricule = null, year = null) {
+            const matricule = workerMatricule || document.getElementById('worker-salary-matricule').value.trim();
+            const schoolYear = year || document.getElementById('worker-salary-year').value;
+            
+            if (!matricule || !schoolYear) return;
+            
             try {
                 const salaryQuery = query(
                     collection(db, 'worker_salaries'),
-                    where('workerMatricule', '==', workerMatricule),
-                    where('month', '==', month)
+                    where('workerMatricule', '==', matricule),
+                    where('schoolYear', '==', schoolYear)
                 );
                 
                 const salarySnap = await getDocs(salaryQuery);
+                const paidMonths = new Set();
                 
-                if (!salarySnap.empty) {
-                    showAlert(`Attention: Ce personnel a déjà été payé pour le mois de ${month}`, 'warning');
-                }
+                salarySnap.forEach(doc => {
+                    paidMonths.add(doc.data().month);
+                });
+                
+                const monthSelect = document.getElementById('worker-salary-month');
+                const availableMonthsDiv = document.getElementById('worker-available-months');
+                
+                availableMonthsDiv.innerHTML = '';
+                
+                MONTHS.forEach(month => {
+                    const isPaid = paidMonths.has(month);
+                    const chip = document.createElement('span');
+                    chip.className = `month-chip ${isPaid ? 'paid' : 'available'}`;
+                    chip.textContent = month.charAt(0).toUpperCase() + month.slice(1);
+                    if (!isPaid) {
+                        chip.onclick = () => {
+                            document.getElementById('worker-salary-month').value = month;
+                        };
+                    }
+                    availableMonthsDiv.appendChild(chip);
+                });
+                
+                Array.from(monthSelect.options).forEach(option => {
+                    if (option.value && paidMonths.has(option.value)) {
+                        option.disabled = true;
+                        option.textContent = option.value + ' (Déjà payé)';
+                    } else {
+                        option.disabled = false;
+                        option.textContent = option.value;
+                    }
+                });
+                
             } catch (error) {
-                console.error('Erreur vérification paiement:', error);
+                console.error('Erreur chargement mois payés:', error);
             }
         }
 
-        // 24. PAIEMENT DES SALAIRES PERSONNELS
+        // 25. SAUVEGARDER CONFIG SALAIRE PERSONNEL
+        window.saveWorkerSalaryConfig = function() {
+            const amount = document.getElementById('default-worker-salary').value;
+            localStorage.setItem('defaultWorkerSalary', amount);
+            showAlert('Montant par défaut enregistré', 'success');
+        };
+
+        // 26. PAIEMENT DES SALAIRES PERSONNELS
         document.getElementById('worker-salary-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const month = document.getElementById('worker-salary-month').value;
+            const schoolYear = document.getElementById('worker-salary-year').value;
             const workerMatricule = document.getElementById('worker-salary-matricule').value;
             const amount = parseFloat(document.getElementById('worker-salary-amount').value);
             const description = document.getElementById('worker-salary-description').value;
@@ -2052,7 +2218,6 @@ async function findParentsForClasses(classes) {
             }
             
             try {
-                // Vérifier que le personnel existe
                 const workerDoc = await getDoc(doc(db, 'workers', workerMatricule));
                 
                 if (!workerDoc.exists()) {
@@ -2062,26 +2227,26 @@ async function findParentsForClasses(classes) {
                 
                 const workerData = workerDoc.data();
                 
-                // Vérifier si déjà payé pour ce mois
                 const salaryQuery = query(
                     collection(db, 'worker_salaries'),
                     where('workerMatricule', '==', workerMatricule),
-                    where('month', '==', month)
+                    where('month', '==', month),
+                    where('schoolYear', '==', schoolYear)
                 );
                 
                 const salarySnap = await getDocs(salaryQuery);
                 
                 if (!salarySnap.empty) {
-                    showAlert(`Ce personnel a déjà été payé pour le mois de ${month}`, 'error');
+                    showAlert(`Ce personnel a déjà été payé pour ${month} ${schoolYear}`, 'error');
                     return;
                 }
                 
-                // Créer le paiement
                 const salaryData = {
                     workerMatricule,
                     workerName: workerData.fullName,
                     workerFunction: workerData.function,
                     month,
+                    schoolYear,
                     amount,
                     description,
                     paidBy: currentUser.uid,
@@ -2091,28 +2256,24 @@ async function findParentsForClasses(classes) {
                 
                 const salaryRef = await addDoc(collection(db, 'worker_salaries'), salaryData);
                 
-                // Sauvegarder pour l'impression
                 lastCreatedSalary = { ...salaryData, id: salaryRef.id, type: 'worker' };
                 
-                // Générer le bordereau
                 await generateSalaryReceipt(
                     workerData.fullName,
                     workerMatricule,
                     month,
                     amount,
                     description,
-                    'PERSONNEL'
+                    'PERSONNEL',
+                    schoolYear
                 );
                 
                 showAlert(`Salaire payé avec succès pour ${workerData.fullName}`, 'success');
                 
-                // Réinitialiser le formulaire
                 document.getElementById('worker-salary-form').reset();
                 document.getElementById('worker-salary-info').classList.add('hidden');
                 
-                // Recharger les listes
                 loadWorkerSalaries();
-                loadSalaryArchives();
                 
             } catch (error) {
                 console.error('Erreur paiement salaire:', error);
@@ -2120,16 +2281,16 @@ async function findParentsForClasses(classes) {
             }
         });
 
-        // 25. CHARGEMENT DES SALAIRES PERSONNELS
+        // 27. CHARGEMENT DES SALAIRES PERSONNELS
         async function loadWorkerSalaries() {
             const tableBody = document.getElementById('worker-salaries-table-body');
-            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Chargement...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Chargement...</td></tr>';
             
             try {
                 const salariesSnap = await getDocs(query(collection(db, 'worker_salaries'), orderBy('paidAt', 'desc')));
                 
                 if (salariesSnap.empty) {
-                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Aucun paiement enregistré.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Aucun paiement enregistré.</td></tr>';
                     return;
                 }
                 
@@ -2137,15 +2298,14 @@ async function findParentsForClasses(classes) {
                 salariesSnap.forEach(doc => {
                     const data = doc.data();
                     
-                    const statusBadge = data.status === 'paid' 
-                        ? '<span class="badge badge-success">Payé</span>' 
-                        : '<span class="badge badge-warning">En attente</span>';
+                    const statusBadge = '<span class="badge badge-success">Payé</span>';
                     
                     html += `
                         <tr>
                             <td>${formatDate(data.paidAt)}</td>
                             <td>${data.workerMatricule}</td>
                             <td>${data.workerName}</td>
+                            <td>${data.schoolYear || 'N/A'}</td>
                             <td>${data.month}</td>
                             <td class="currency-display">$${data.amount.toFixed(2)}</td>
                             <td>${statusBadge}</td>
@@ -2159,7 +2319,6 @@ async function findParentsForClasses(classes) {
                 
                 tableBody.innerHTML = html;
                 
-                // Recherche
                 document.getElementById('worker-salary-search').addEventListener('input', (e) => {
                     const searchTerm = e.target.value.toLowerCase();
                     const rows = tableBody.querySelectorAll('tr');
@@ -2172,12 +2331,244 @@ async function findParentsForClasses(classes) {
                 
             } catch (error) {
                 console.error("Erreur chargement salaires personnels:", error);
-                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Erreur de chargement</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Erreur de chargement</td></tr>';
             }
         }
 
-        // 26. GÉNÉRATION DU REÇU DE SALAIRE
-        async function generateSalaryReceipt(name, matricule, month, amount, description, type) {
+        // 28. CHARGEMENT DES MOIS POUR AGENT
+        window.loadAgentMonths = async function() {
+            const agentValue = document.getElementById('agent-select').value;
+            const schoolYear = document.getElementById('agent-salary-year').value;
+            
+            if (!agentValue) {
+                showAlert('Veuillez sélectionner un agent', 'error');
+                return;
+            }
+            
+            const [agentId, collection] = agentValue.split('|');
+            
+            try {
+                const docRef = doc(db, collection, agentId);
+                const agentDoc = await getDoc(docRef);
+                
+                if (!agentDoc.exists()) {
+                    showAlert('Agent non trouvé', 'error');
+                    return;
+                }
+                
+                const agentData = agentDoc.data();
+                
+                document.getElementById('agent-found-name').value = agentData.fullName || 'Nom inconnu';
+                document.getElementById('agent-found-role').value = collection === 'admin' ? 'Administrateur' :
+                                                                   collection === 'secretary' ? 'Secrétaire' :
+                                                                   collection === 'discipline' ? 'Discipline' : 'Étude';
+                document.getElementById('agent-found-email').value = agentData.email || '';
+                document.getElementById('agent-salary-info').classList.remove('hidden');
+                
+                const matricule = agentData.matricule || agentId;
+                
+                const salaryQuery = query(
+                    collection(db, 'agent_salaries'),
+                    where('agentId', '==', agentId),
+                    where('schoolYear', '==', schoolYear)
+                );
+                
+                const salarySnap = await getDocs(salaryQuery);
+                const paidMonths = new Set();
+                
+                salarySnap.forEach(doc => {
+                    paidMonths.add(doc.data().month);
+                });
+                
+                const monthSelect = document.getElementById('agent-salary-month');
+                const availableMonthsDiv = document.getElementById('agent-available-months');
+                
+                availableMonthsDiv.innerHTML = '';
+                
+                MONTHS.forEach(month => {
+                    const isPaid = paidMonths.has(month);
+                    const chip = document.createElement('span');
+                    chip.className = `month-chip ${isPaid ? 'paid' : 'available'}`;
+                    chip.textContent = month.charAt(0).toUpperCase() + month.slice(1);
+                    if (!isPaid) {
+                        chip.onclick = () => {
+                            document.getElementById('agent-salary-month').value = month;
+                        };
+                    }
+                    availableMonthsDiv.appendChild(chip);
+                });
+                
+                Array.from(monthSelect.options).forEach(option => {
+                    if (option.value && paidMonths.has(option.value)) {
+                        option.disabled = true;
+                        option.textContent = option.value + ' (Déjà payé)';
+                    } else {
+                        option.disabled = false;
+                        option.textContent = option.value;
+                    }
+                });
+                
+                const defaultSalary = document.getElementById('default-agent-salary').value;
+                document.getElementById('agent-salary-amount').value = defaultSalary;
+                
+            } catch (error) {
+                console.error('Erreur chargement agent:', error);
+                showAlert('Erreur: ' + error.message, 'error');
+            }
+        };
+
+        // 29. SAUVEGARDER CONFIG SALAIRE AGENT
+        window.saveAgentSalaryConfig = function() {
+            const amount = document.getElementById('default-agent-salary').value;
+            localStorage.setItem('defaultAgentSalary', amount);
+            showAlert('Montant par défaut enregistré', 'success');
+        };
+
+        // 30. PAIEMENT DES SALAIRES AGENTS
+        document.getElementById('agent-salary-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const agentValue = document.getElementById('agent-select').value;
+            const month = document.getElementById('agent-salary-month').value;
+            const schoolYear = document.getElementById('agent-salary-year').value;
+            const amount = parseFloat(document.getElementById('agent-salary-amount').value);
+            const description = document.getElementById('agent-salary-description').value;
+            
+            if (!agentValue || !month || !amount) {
+                showAlert("Veuillez remplir tous les champs obligatoires", "error");
+                return;
+            }
+            
+            const [agentId, collection] = agentValue.split('|');
+            
+            try {
+                const docRef = doc(db, collection, agentId);
+                const agentDoc = await getDoc(docRef);
+                
+                if (!agentDoc.exists()) {
+                    showAlert("Agent non trouvé", "error");
+                    return;
+                }
+                
+                const agentData = agentDoc.data();
+                
+                const salaryQuery = query(
+                    collection(db, 'agent_salaries'),
+                    where('agentId', '==', agentId),
+                    where('month', '==', month),
+                    where('schoolYear', '==', schoolYear)
+                );
+                
+                const salarySnap = await getDocs(salaryQuery);
+                
+                if (!salarySnap.empty) {
+                    showAlert(`Cet agent a déjà été payé pour ${month} ${schoolYear}`, 'error');
+                    return;
+                }
+                
+                const salaryData = {
+                    agentId,
+                    agentMatricule: agentData.matricule || agentId,
+                    agentName: agentData.fullName || 'Nom inconnu',
+                    agentRole: collection,
+                    month,
+                    schoolYear,
+                    amount,
+                    description,
+                    paidBy: currentUser.uid,
+                    paidAt: serverTimestamp(),
+                    status: 'paid'
+                };
+                
+                const salaryRef = await addDoc(collection(db, 'agent_salaries'), salaryData);
+                
+                lastCreatedSalary = { ...salaryData, id: salaryRef.id, type: 'agent' };
+                
+                await generateSalaryReceipt(
+                    agentData.fullName || 'Agent',
+                    agentData.matricule || agentId,
+                    month,
+                    amount,
+                    description,
+                    'AGENT ADMIN',
+                    schoolYear
+                );
+                
+                showAlert(`Salaire payé avec succès pour ${agentData.fullName || 'Agent'}`, 'success');
+                
+                document.getElementById('agent-salary-form').reset();
+                document.getElementById('agent-salary-info').classList.add('hidden');
+                document.getElementById('agent-select').value = '';
+                
+                loadAgentSalaries();
+                
+            } catch (error) {
+                console.error('Erreur paiement salaire agent:', error);
+                showAlert('Erreur lors du paiement: ' + error.message, 'error');
+            }
+        });
+
+        // 31. CHARGEMENT DES SALAIRES AGENTS
+        async function loadAgentSalaries() {
+            const tableBody = document.getElementById('agent-salaries-table-body');
+            tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">Chargement...</td></tr>';
+            
+            try {
+                const salariesSnap = await getDocs(query(collection(db, 'agent_salaries'), orderBy('paidAt', 'desc')));
+                
+                if (salariesSnap.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">Aucun paiement enregistré.</td></tr>';
+                    return;
+                }
+                
+                let html = '';
+                salariesSnap.forEach(doc => {
+                    const data = doc.data();
+                    
+                    const roleDisplay = data.agentRole === 'admin' ? 'Administrateur' :
+                                       data.agentRole === 'secretary' ? 'Secrétaire' :
+                                       data.agentRole === 'discipline' ? 'Discipline' : 'Étude';
+                    
+                    const statusBadge = '<span class="badge badge-success">Payé</span>';
+                    
+                    html += `
+                        <tr>
+                            <td>${formatDate(data.paidAt)}</td>
+                            <td>${data.agentMatricule}</td>
+                            <td>${data.agentName}</td>
+                            <td>${roleDisplay}</td>
+                            <td>${data.schoolYear || 'N/A'}</td>
+                            <td>${data.month}</td>
+                            <td class="currency-display">$${data.amount.toFixed(2)}</td>
+                            <td>${statusBadge}</td>
+                            <td class="action-buttons">
+                                <button class="btn btn-primary" onclick="viewSalaryDetails('${doc.id}', 'agent')">Détails</button>
+                                <button class="btn btn-success" onclick="printSalaryReceipt('${doc.id}', 'agent')">Reçu</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                tableBody.innerHTML = html;
+                
+                document.getElementById('agent-salary-search').addEventListener('input', (e) => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    const rows = tableBody.querySelectorAll('tr');
+                    
+                    rows.forEach(row => {
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(searchTerm) ? '' : 'none';
+                    });
+                });
+                
+            } catch (error) {
+                console.error("Erreur chargement salaires agents:", error);
+                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">Erreur de chargement</td></tr>';
+            }
+        }
+
+        // 32. GÉNÉRATION DU REÇU DE SALAIRE
+        async function generateSalaryReceipt(name, matricule, month, amount, description, type, schoolYear = '') {
             const receiptContent = document.getElementById('salary-receipt-content');
             
             const today = new Date();
@@ -2201,7 +2592,7 @@ async function findParentsForClasses(classes) {
                     </div>
                     
                     <div class="communique-content">
-                        <p>Je soussigné(e), <strong>${currentUser.email}</strong>, certifie avoir effectué le paiement suivant :</p>
+                        <p>Je soussigné(e), <strong>${currentUser?.email || 'Le secrétaire'}</strong>, certifie avoir effectué le paiement suivant :</p>
                         
                         <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
                             <tr>
@@ -2215,6 +2606,10 @@ async function findParentsForClasses(classes) {
                             <tr>
                                 <td style="padding: 8px; border: 1px solid #ddd;"><strong>Type :</strong></td>
                                 <td style="padding: 8px; border: 1px solid #ddd;">${type}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd;"><strong>Année scolaire :</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">${schoolYear}</td>
                             </tr>
                             <tr>
                                 <td style="padding: 8px; border: 1px solid #ddd;"><strong>Mois :</strong></td>
@@ -2246,7 +2641,7 @@ async function findParentsForClasses(classes) {
             document.getElementById('salary-receipt-modal').classList.remove('hidden');
         }
 
-        // 27. IMPRESSION DU REÇU DE SALAIRE
+        // 33. IMPRESSION DU REÇU DE SALAIRE
         document.getElementById('print-salary-receipt-btn').addEventListener('click', () => {
             const receiptContent = document.getElementById('salary-receipt-content').innerHTML;
             const printWindow = window.open('', '_blank');
@@ -2330,171 +2725,12 @@ async function findParentsForClasses(classes) {
             printWindow.document.close();
         });
 
-        // 28. BOUTON RETOUR POUR LE REÇU
+        // 34. BOUTON RETOUR POUR LE REÇU
         document.getElementById('back-salary-receipt-btn').addEventListener('click', () => {
             document.getElementById('salary-receipt-modal').classList.add('hidden');
         });
 
-        // 29. CHARGEMENT DES ARCHIVES COMMUNIQUÉS
-        async function loadCommuniqueArchives() {
-            const tableBody = document.getElementById('archive-table-body');
-            tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Chargement...</td></tr>';
-            
-            try {
-                const communiquesSnap = await getDocs(query(collection(db, 'communiques'), orderBy('publishedAt', 'desc')));
-                
-                if (communiquesSnap.empty) {
-                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Aucun communiqué publié.</td></tr>';
-                    return;
-                }
-                
-                let html = '';
-                communiquesSnap.forEach(doc => {
-                    const data = doc.data();
-                    
-                    const statusBadge = data.status === 'published' 
-                        ? '<span class="badge badge-success">Publié</span>' 
-                        : '<span class="badge badge-warning">Brouillon</span>';
-                    
-                    html += `
-                        <tr>
-                            <td>${formatDate(data.publishedAt)}</td>
-                            <td>${data.feeType}</td>
-                            <td>${data.month}</td>
-                            <td>${data.schoolYear}</td>
-                            <td>${data.classes.join(', ')}</td>
-                            <td class="currency-display">$${data.amount.toFixed(2)}</td>
-                            <td>${statusBadge}</td>
-                            <td class="action-buttons">
-                                <button class="btn btn-primary" onclick="viewCommuniqueDetails('${doc.id}')">Détails</button>
-                                <button class="btn btn-info" onclick="reprintCommunique('${doc.id}')">Réimprimer</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                
-                tableBody.innerHTML = html;
-                
-                // Filtres
-                document.getElementById('archive-fee-filter').addEventListener('change', filterArchives);
-                document.getElementById('archive-month-filter').addEventListener('change', filterArchives);
-                document.getElementById('archive-year-filter').addEventListener('change', filterArchives);
-                
-            } catch (error) {
-                console.error("Erreur chargement archives:", error);
-                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Erreur de chargement</td></tr>';
-            }
-        }
-
-        // 30. FILTRAGE DES ARCHIVES
-        function filterArchives() {
-            const feeFilter = document.getElementById('archive-fee-filter').value;
-            const monthFilter = document.getElementById('archive-month-filter').value;
-            const yearFilter = document.getElementById('archive-year-filter').value;
-            
-            const rows = document.querySelectorAll('#archive-table-body tr');
-            
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                if (cells.length < 8) return;
-                
-                const feeType = cells[1].textContent;
-                const month = cells[2].textContent;
-                const year = cells[3].textContent;
-                
-                let showRow = true;
-                
-                if (feeFilter && feeType !== feeFilter) showRow = false;
-                if (monthFilter && month !== monthFilter) showRow = false;
-                if (yearFilter && year !== yearFilter) showRow = false;
-                
-                row.style.display = showRow ? '' : 'none';
-            });
-        }
-
-        // 31. CHARGEMENT DES ARCHIVES SALAIRES
-        async function loadSalaryArchives() {
-            // Enseignants
-            await loadTeacherSalaryArchives();
-            // Personnels
-            await loadWorkerSalaryArchives();
-        }
-
-        async function loadTeacherSalaryArchives() {
-            const tableBody = document.getElementById('archive-teachers-table-body');
-            
-            try {
-                const salariesSnap = await getDocs(query(collection(db, 'teacher_salaries'), orderBy('paidAt', 'desc')));
-                
-                let html = '';
-                if (salariesSnap.empty) {
-                    html = '<tr><td colspan="7" style="text-align: center;">Aucun paiement enregistré.</td></tr>';
-                } else {
-                    salariesSnap.forEach(doc => {
-                        const data = doc.data();
-                        
-                        html += `
-                            <tr>
-                                <td>${formatDate(data.paidAt)}</td>
-                                <td>${data.teacherMatricule}</td>
-                                <td>${data.teacherName}</td>
-                                <td>${data.month}</td>
-                                <td class="currency-display">$${data.amount.toFixed(2)}</td>
-                                <td>${data.teacherType === 'secondary' ? 'Secondaire' : data.teacherType === 'primary' ? 'Primaire' : 'Maternelle'}</td>
-                                <td class="action-buttons">
-                                    <button class="btn btn-primary" onclick="viewSalaryDetails('${doc.id}', 'teacher')">Détails</button>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                }
-                
-                tableBody.innerHTML = html;
-                
-            } catch (error) {
-                console.error("Erreur chargement archives enseignants:", error);
-                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Erreur de chargement</td></tr>';
-            }
-        }
-
-        async function loadWorkerSalaryArchives() {
-            const tableBody = document.getElementById('archive-workers-table-body');
-            
-            try {
-                const salariesSnap = await getDocs(query(collection(db, 'worker_salaries'), orderBy('paidAt', 'desc')));
-                
-                let html = '';
-                if (salariesSnap.empty) {
-                    html = '<tr><td colspan="7" style="text-align: center;">Aucun paiement enregistré.</td></tr>';
-                } else {
-                    salariesSnap.forEach(doc => {
-                        const data = doc.data();
-                        
-                        html += `
-                            <tr>
-                                <td>${formatDate(data.paidAt)}</td>
-                                <td>${data.workerMatricule}</td>
-                                <td>${data.workerName}</td>
-                                <td>${data.month}</td>
-                                <td class="currency-display">$${data.amount.toFixed(2)}</td>
-                                <td>${data.workerFunction}</td>
-                                <td class="action-buttons">
-                                    <button class="btn btn-primary" onclick="viewSalaryDetails('${doc.id}', 'worker')">Détails</button>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                }
-                
-                tableBody.innerHTML = html;
-                
-            } catch (error) {
-                console.error("Erreur chargement archives personnels:", error);
-                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Erreur de chargement</td></tr>';
-            }
-        }
-
-        // 32. FONCTIONS GLOBALES POUR LES BOUTONS
+        // 35. FONCTIONS GLOBALES POUR LES BOUTONS
         window.viewWorkerDetails = async (workerMatricule) => {
             try {
                 const workerDoc = await getDoc(doc(db, 'workers', workerMatricule));
@@ -2526,7 +2762,399 @@ async function findParentsForClasses(classes) {
             }
         };
 
-        window.editWorker = async (workerMatricule) => {
+        window.viewSalaryDetails = async (salaryId, type) => {
+            try {
+                let collectionName;
+                if (type === 'teacher') collectionName = 'teacher_salaries';
+                else if (type === 'worker') collectionName = 'worker_salaries';
+                else collectionName = 'agent_salaries';
+                
+                const salaryDoc = await getDoc(doc(db, collectionName, salaryId));
+                
+                if (!salaryDoc.exists()) {
+                    showAlert('Paiement non trouvé.', 'error');
+                    return;
+                }
+                
+                const data = salaryDoc.data();
+                alert(`
+                    Détails du paiement:
+                    
+                    Date: ${formatDate(data.paidAt)}
+                    Bénéficiaire: ${data.teacherName || data.workerName || data.agentName}
+                    Matricule: ${data.teacherMatricule || data.workerMatricule || data.agentMatricule}
+                    Année scolaire: ${data.schoolYear || 'N/A'}
+                    Mois: ${data.month}
+                    Montant: $${data.amount.toFixed(2)}
+                    Description: ${data.description || 'Aucune'}
+                    Payé par: ${data.paidBy}
+                `);
+                
+            } catch (error) {
+                showAlert('Erreur: ' + error.message, 'error');
+            }
+        };
+
+        window.printSalaryReceipt = async (salaryId, type) => {
+            try {
+                let collectionName;
+                if (type === 'teacher') collectionName = 'teacher_salaries';
+                else if (type === 'worker') collectionName = 'worker_salaries';
+                else collectionName = 'agent_salaries';
+                
+                const salaryDoc = await getDoc(doc(db, collectionName, salaryId));
+                
+                if (!salaryDoc.exists()) {
+                    showAlert('Paiement non trouvé.', 'error');
+                    return;
+                }
+                
+                const data = salaryDoc.data();
+                
+                let name, matricule, typeLabel;
+                if (type === 'teacher') {
+                    name = data.teacherName;
+                    matricule = data.teacherMatricule;
+                    typeLabel = 'ENSEIGNANT';
+                } else if (type === 'worker') {
+                    name = data.workerName;
+                    matricule = data.workerMatricule;
+                    typeLabel = 'PERSONNEL';
+                } else {
+                    name = data.agentName;
+                    matricule = data.agentMatricule;
+                    typeLabel = 'AGENT ADMIN';
+                }
+                
+                await generateSalaryReceipt(
+                    name,
+                    matricule,
+                    data.month,
+                    data.amount,
+                    data.description,
+                    typeLabel,
+                    data.schoolYear
+                );
+                
+            } catch (error) {
+                showAlert('Erreur: ' + error.message, 'error');
+            }
+        };
+
+        // 36. IMPRESSION DE LA CARTE DE SERVICE POUR PERSONNEL
+        window.printWorkerServiceCard = async (workerMatricule) => {
+            try {
+                const workerDoc = await getDoc(doc(db, 'workers', workerMatricule));
+                
+                if (!workerDoc.exists()) {
+                    showAlert('Personnel non trouvé.', 'error');
+                    return;
+                }
+                
+                const data = workerDoc.data();
+                
+                const today = new Date();
+                const formattedDate = today.toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                
+                const cardHTML = `
+                    <div class="service-card">
+                        <div class="card-header">
+                            <img src="R.png" alt="Logo" style="max-width: 80px; margin-bottom: 10px;">
+                            <h3>CARTE DE SERVICE</h3>
+                            <h4>Complexe Scolaire la Colombe</h4>
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem; margin: 1rem 0;">
+                            <div style="flex: 1; text-align: center;">
+                                ${data.photoURL ? 
+                                    `<img src="${data.photoURL}" class="card-photo">` :
+                                    `<div class="card-photo" style="background: #eee; display: flex; align-items: center; justify-content: center;"><i class="fas fa-user" style="font-size: 3rem; color: #999;"></i></div>`
+                                }
+                            </div>
+                            <div style="flex: 2;">
+                                <table>
+                                    <tr><td><strong>Matricule:</strong></td><td>${data.matricule}</td></tr>
+                                    <tr><td><strong>Nom:</strong></td><td>${data.fullName}</td></tr>
+                                    <tr><td><strong>Fonction:</strong></td><td>${data.function}</td></tr>
+                                    <tr><td><strong>Téléphone:</strong></td><td>${data.phone}</td></tr>
+                                    <tr><td><strong>Embauche:</strong></td><td>${data.hiredDate}</td></tr>
+                                    <tr><td><strong>Statut:</strong></td><td><span class="badge badge-success">Actif</span></td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer">
+                            <p>Émise le ${formattedDate}</p>
+                            <p>Valable pour l'année ${new Date().getFullYear()}-${new Date().getFullYear() + 1}</p>
+                            <div style="margin-top: 10px;">
+                                <p>Le Directeur</p>
+                                <div style="border-top: 1px solid #000; width: 150px; margin: 5px auto;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('worker-card-content').innerHTML = cardHTML;
+                document.getElementById('worker-card-modal').classList.remove('hidden');
+                
+            } catch (error) {
+                showAlert('Erreur: ' + error.message, 'error');
+            }
+        };
+
+        // 37. IMPRESSION DE LA CARTE DE SERVICE POUR AGENT
+        window.printAgentServiceCard = async (agentId, collection) => {
+            try {
+                const agentDoc = await getDoc(doc(db, collection, agentId));
+                
+                if (!agentDoc.exists()) {
+                    showAlert('Agent non trouvé.', 'error');
+                    return;
+                }
+                
+                const data = agentDoc.data();
+                
+                const roleDisplay = collection === 'admin' ? 'Administrateur' :
+                                   collection === 'secretary' ? 'Secrétaire' :
+                                   collection === 'discipline' ? 'Discipline' : 'Service Étude';
+                
+                const today = new Date();
+                const formattedDate = today.toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                
+                const cardHTML = `
+                    <div class="service-card">
+                        <div class="card-header">
+                            <img src="R.png" alt="Logo" style="max-width: 80px; margin-bottom: 10px;">
+                            <h3>CARTE DE SERVICE</h3>
+                            <h4>Complexe Scolaire la Colombe</h4>
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem; margin: 1rem 0;">
+                            <div style="flex: 1; text-align: center;">
+                                ${data.photoURL ? 
+                                    `<img src="${data.photoURL}" class="card-photo">` :
+                                    `<div class="card-photo" style="background: #eee; display: flex; align-items: center; justify-content: center;"><i class="fas fa-user" style="font-size: 3rem; color: #999;"></i></div>`
+                                }
+                            </div>
+                            <div style="flex: 2;">
+                                <table>
+                                    <tr><td><strong>Matricule:</strong></td><td>${data.matricule || agentId}</td></tr>
+                                    <tr><td><strong>Nom:</strong></td><td>${data.fullName || 'Nom inconnu'}</td></tr>
+                                    <tr><td><strong>Rôle:</strong></td><td>${roleDisplay}</td></tr>
+                                    <tr><td><strong>Email:</strong></td><td>${data.email || 'Non renseigné'}</td></tr>
+                                    <tr><td><strong>Statut:</strong></td><td><span class="badge badge-success">Actif</span></td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer">
+                            <p>Émise le ${formattedDate}</p>
+                            <p>Valable pour l'année ${new Date().getFullYear()}-${new Date().getFullYear() + 1}</p>
+                            <div style="margin-top: 10px;">
+                                <p>Le Directeur</p>
+                                <div style="border-top: 1px solid #000; width: 150px; margin: 5px auto;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('service-card-content').innerHTML = cardHTML;
+                document.getElementById('service-card-modal').classList.remove('hidden');
+                
+            } catch (error) {
+                showAlert('Erreur: ' + error.message, 'error');
+            }
+        };
+
+        // 38. IMPRESSION DE LA CARTE
+        document.getElementById('print-worker-card-btn').addEventListener('click', () => {
+            const cardContent = document.getElementById('worker-card-content').innerHTML;
+            printCard(cardContent);
+        });
+
+        document.getElementById('print-service-card-btn').addEventListener('click', () => {
+            const cardContent = document.getElementById('service-card-content').innerHTML;
+            printCard(cardContent);
+        });
+
+        function printCard(content) {
+            const printWindow = window.open('', '_blank');
+            
+            const printHTML = `
+                <!DOCTYPE html>
+                <html>
+                    <head>
+                        <title>Carte de service - CS la Colombe</title>
+                        <style>
+                            body { 
+                                font-family: Arial, sans-serif; 
+                                margin: 30px; 
+                                font-size: 12px;
+                            }
+                            .service-card { 
+                                border: 2px solid #3498db; 
+                                padding: 20px; 
+                                border-radius: 10px;
+                                max-width: 500px; 
+                                margin: 0 auto;
+                            }
+                            .card-header { 
+                                text-align: center; 
+                                margin-bottom: 20px; 
+                            }
+                            .card-photo { 
+                                width: 120px; 
+                                height: 120px; 
+                                border-radius: 50%; 
+                                object-fit: cover; 
+                                border: 3px solid #3498db; 
+                                margin: 0 auto; 
+                                display: block;
+                            }
+                            .card-footer { 
+                                text-align: center; 
+                                margin-top: 20px; 
+                                font-size: 10px;
+                                color: #666;
+                            }
+                            table { 
+                                width: 100%; 
+                            }
+                            td { 
+                                padding: 5px; 
+                            }
+                            .badge { 
+                                display: inline-block; 
+                                padding: 3px 8px; 
+                                border-radius: 4px; 
+                                background: #27ae60; 
+                                color: white; 
+                            }
+                            @media print {
+                                body { margin: 10px; }
+                                .service-card { border: 2px solid #000; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${content}
+                        <script>
+                            window.onload = function() {
+                                window.print();
+                                setTimeout(function() {
+                                    window.close();
+                                }, 1000);
+                            }
+                        <\/script>
+                    </body>
+                </html>
+            `;
+            
+            printWindow.document.write(printHTML);
+            printWindow.document.close();
+        }
+
+        // 39. BOUTONS RETOUR POUR LES CARTES
+        document.getElementById('back-worker-card-btn').addEventListener('click', () => {
+            document.getElementById('worker-card-modal').classList.add('hidden');
+        });
+
+        document.getElementById('back-service-card-btn').addEventListener('click', () => {
+            document.getElementById('service-card-modal').classList.add('hidden');
+        });
+
+        // 40. NAVIGATION ENTRE LES PAGES
+        document.querySelectorAll('.nav-menu a').forEach(link => {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                document.querySelectorAll('.nav-menu a, .page').forEach(el => el.classList.remove('active'));
+                link.classList.add('active');
+                document.getElementById(link.dataset.page + '-page').classList.add('active');
+                document.getElementById('page-title').textContent = link.textContent;
+                
+                if (window.innerWidth <= 768) {
+                    document.querySelector('.sidebar').classList.add('collapsed');
+                }
+            });
+        });
+
+        // 41. NAVIGATION ENTRE LES ONGLETS
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.dataset.tab;
+                document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
+                tab.classList.add('active');
+                
+                if (tabId === 'teachers' || tabId === 'workers' || tabId === 'agents') {
+                    document.getElementById(tabId + '-tab').classList.add('active');
+                }
+            });
+        });
+
+        // 42. GESTION DU MENU BURGER
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.toggle('collapsed');
+        });
+
+        // 43. FERMER LE MENU EN CLIQUANT À L'EXTÉRIEUR SUR MOBILE
+        document.addEventListener('click', (e) => {
+            const sidebar = document.querySelector('.sidebar');
+            const menuToggle = document.getElementById('menu-toggle');
+            
+            if (window.innerWidth <= 768 && 
+                !sidebar.contains(e.target) && 
+                !menuToggle.contains(e.target) &&
+                !sidebar.classList.contains('collapsed')) {
+                sidebar.classList.add('collapsed');
+            }
+        });
+
+        // 44. GESTION DES BOUTONS FERMER MODAL
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.modal').forEach(modal => modal.classList.add('hidden'));
+                editWorkerPhotoFile = null;
+            });
+        });
+
+        // 45. FERMER LES MODALS EN CLIQUANT À L'EXTÉRIEUR
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                    if (modal.id === 'edit-worker-modal') {
+                        editWorkerPhotoFile = null;
+                    }
+                }
+            });
+        });
+
+        // 46. CHARGER LES VALEURS PAR DÉFAUT DEPUIS LOCALSTORAGE
+        function loadDefaultValues() {
+            const teacherSalary = localStorage.getItem('defaultTeacherSalary');
+            if (teacherSalary) document.getElementById('default-teacher-salary').value = teacherSalary;
+            
+            const workerSalary = localStorage.getItem('defaultWorkerSalary');
+            if (workerSalary) document.getElementById('default-worker-salary').value = workerSalary;
+            
+            const agentSalary = localStorage.getItem('defaultAgentSalary');
+            if (agentSalary) document.getElementById('default-agent-salary').value = agentSalary;
+        }
+
+        loadDefaultValues();
+    </script>
+
+<script>
+// Fonctions globales pour les boutons d'édition
+window.editWorker = async (workerMatricule) => {
     try {
         const workerDoc = await getDoc(doc(db, 'workers', workerMatricule));
         
@@ -2537,7 +3165,6 @@ async function findParentsForClasses(classes) {
         
         const data = workerDoc.data();
         
-        // Remplir le formulaire avec les données existantes
         document.getElementById('edit-worker-matricule').value = workerMatricule;
         document.getElementById('edit-worker-name').value = data.fullName;
         document.getElementById('edit-worker-birthdate').value = data.birthdate;
@@ -2550,7 +3177,6 @@ async function findParentsForClasses(classes) {
         document.getElementById('edit-worker-hireddate').value = data.hiredDate || '';
         document.getElementById('edit-worker-description').value = data.description || '';
         
-        // Afficher la photo
         const photoPreview = document.getElementById('edit-worker-photo-preview');
         if (data.photoURL) {
             photoPreview.innerHTML = `<img src="${data.photoURL}" class="photo-preview">`;
@@ -2558,10 +3184,8 @@ async function findParentsForClasses(classes) {
             photoPreview.innerHTML = '<i class="fas fa-user"></i>';
         }
         
-        // Réinitialiser la variable de fichier photo
         editWorkerPhotoFile = null;
         
-        // Afficher le modal
         document.getElementById('edit-worker-modal').classList.remove('hidden');
         
     } catch (error) {
@@ -2570,7 +3194,6 @@ async function findParentsForClasses(classes) {
     }
 };
 
-// Gestion de la photo dans l'édition
 document.getElementById('edit-worker-photo').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
@@ -2591,7 +3214,6 @@ document.getElementById('edit-worker-photo').addEventListener('change', function
     }
 });
 
-// Soumission du formulaire de modification
 document.getElementById('edit-worker-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -2607,7 +3229,6 @@ document.getElementById('edit-worker-form').addEventListener('submit', async (e)
     const hiredDate = document.getElementById('edit-worker-hireddate').value;
     const description = document.getElementById('edit-worker-description').value;
     
-    // Validation
     if (!fullName || !birthdate || !birthplace || !gender || !address || !phone || !workerFunction) {
         showAlert("Veuillez remplir tous les champs obligatoires (*)", "error");
         return;
@@ -2620,14 +3241,12 @@ document.getElementById('edit-worker-form').addEventListener('submit', async (e)
         submitBtn.textContent = 'Mise à jour en cours...';
         submitBtn.disabled = true;
         
-        // Récupérer les données actuelles
         const workerRef = doc(db, 'workers', matricule);
         const currentWorker = await getDoc(workerRef);
         const currentData = currentWorker.data();
         
         let photoURL = currentData.photoURL;
         
-        // Uploader la nouvelle photo si fournie
         if (editWorkerPhotoFile) {
             try {
                 photoURL = await uploadToCloudinary(editWorkerPhotoFile, `workers/${matricule}`);
@@ -2637,7 +3256,6 @@ document.getElementById('edit-worker-form').addEventListener('submit', async (e)
             }
         }
         
-        // Mettre à jour les données
         const updatedData = {
             fullName,
             birthdate,
@@ -2657,13 +3275,9 @@ document.getElementById('edit-worker-form').addEventListener('submit', async (e)
         
         showAlert(`Personnel ${matricule} mis à jour avec succès !`, 'success');
         
-        // Fermer le modal
         document.getElementById('edit-worker-modal').classList.add('hidden');
-        
-        // Réinitialiser
         editWorkerPhotoFile = null;
         
-        // Recharger la liste
         loadWorkersList();
         
     } catch (error) {
@@ -2675,7 +3289,6 @@ document.getElementById('edit-worker-form').addEventListener('submit', async (e)
     }
 });
 
-// Suppression d'un personnel
 document.getElementById('delete-worker-btn').addEventListener('click', async () => {
     const matricule = document.getElementById('edit-worker-matricule').value;
     const workerName = document.getElementById('edit-worker-name').value;
@@ -2687,10 +3300,6 @@ document.getElementById('delete-worker-btn').addEventListener('click', async () 
     try {
         const workerRef = doc(db, 'workers', matricule);
         
-        // Option 1: Supprimer complètement
-        // await deleteDoc(workerRef);
-        
-        // Option 2: Marquer comme supprimé (recommandé pour garder l'historique)
         await updateDoc(workerRef, {
             status: 'deleted',
             deletedAt: serverTimestamp(),
@@ -2699,10 +3308,8 @@ document.getElementById('delete-worker-btn').addEventListener('click', async () 
         
         showAlert(`Personnel ${matricule} supprimé avec succès`, 'success');
         
-        // Fermer le modal
         document.getElementById('edit-worker-modal').classList.add('hidden');
         
-        // Recharger la liste
         loadWorkersList();
         
     } catch (error) {
@@ -2711,386 +3318,10 @@ document.getElementById('delete-worker-btn').addEventListener('click', async () 
     }
 });
 
-// Bouton d'annulation
 document.getElementById('cancel-edit-btn').addEventListener('click', () => {
     document.getElementById('edit-worker-modal').classList.add('hidden');
     editWorkerPhotoFile = null;
 });
-
-// 40. GESTION DES BOUTONS FERMER MODAL
-document.querySelectorAll('.close-modal').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.modal').forEach(modal => modal.classList.add('hidden'));
-        // Réinitialiser la photo d'édition
-        editWorkerPhotoFile = null;
-    });
-});
-
-// 41. FERMER LES MODALS EN CLIQUANT À L'EXTÉRIEUR
-document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.add('hidden');
-            // Si c'est le modal d'édition, réinitialiser la photo
-            if (modal.id === 'edit-worker-modal') {
-                editWorkerPhotoFile = null;
-            }
-        }
-    });
-});
-
-        window.printSalaryReceipt = async (salaryId, type) => {
-            try {
-                let collectionName = type === 'teacher' ? 'teacher_salaries' : 'worker_salaries';
-                const salaryDoc = await getDoc(doc(db, collectionName, salaryId));
-                
-                if (!salaryDoc.exists()) {
-                    showAlert('Paiement non trouvé.', 'error');
-                    return;
-                }
-                
-                const data = salaryDoc.data();
-                
-                let name, matricule;
-                if (type === 'teacher') {
-                    name = data.teacherName;
-                    matricule = data.teacherMatricule;
-                } else {
-                    name = data.workerName;
-                    matricule = data.workerMatricule;
-                }
-                
-                await generateSalaryReceipt(
-                    name,
-                    matricule,
-                    data.month,
-                    data.amount,
-                    data.description,
-                    type === 'teacher' ? 'ENSEIGNANT' : 'PERSONNEL'
-                );
-                
-            } catch (error) {
-                showAlert('Erreur: ' + error.message, 'error');
-            }
-        };
-
-        window.viewCommuniqueDetails = async (communiqueId) => {
-            try {
-                const communiqueDoc = await getDoc(doc(db, 'communiques', communiqueId));
-                
-                if (!communiqueDoc.exists()) {
-                    showAlert('Communiqué non trouvé.', 'error');
-                    return;
-                }
-                
-                const data = communiqueDoc.data();
-                
-                alert(`
-                    Détails du communiqué:
-                    
-                    Type de frais: ${data.feeType}
-                    Date limite: ${data.deadline}
-                    Année scolaire: ${data.schoolYear}
-                    Mois: ${data.month}
-                    Montant: $${data.amount.toFixed(2)}
-                    Classes: ${data.classes.join(', ')}
-                    Message: ${data.message || 'Aucun'}
-                    Publié le: ${formatDate(data.publishedAt)}
-                    Statut: ${data.status}
-                `);
-                
-            } catch (error) {
-                showAlert('Erreur: ' + error.message, 'error');
-            }
-        };
-
-        window.reprintCommunique = async (communiqueId) => {
-            // Réimpression du communiqué
-            showAlert('Fonction de réimpression à implémenter', 'info');
-        };
-
-        // 33. IMPRESSION DE LA CARTE DU PERSONNEL
-        window.printWorkerCard = function() {
-            if (!lastCreatedWorker) {
-                showAlert("Aucun personnel récemment créé", "error");
-                return;
-            }
-            
-            const worker = lastCreatedWorker;
-            const cardContent = document.getElementById('worker-card-content');
-            
-            const today = new Date();
-            const formattedDate = today.toLocaleDateString('fr-FR', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric'
-            });
-            
-            const cardHTML = `
-                <div class="communique-preview">
-                    <div class="communique-header">
-                        <img src="R.png" alt="Logo CS la Colombe" class="communique-logo">
-                        <div class="communique-title">CARTE D'IDENTIFICATION DU PERSONNEL</div>
-                        <div>Complexe Scolaire la Colombe</div>
-                    </div>
-                    
-                    <div style="display: flex; gap: 2rem; margin: 2rem 0;">
-                        <div style="flex: 1;">
-                            ${worker.photoURL ? 
-                                `<img src="${worker.photoURL}" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary);">` :
-                                '<div style="width: 150px; height: 150px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: #999;"><i class="fas fa-user"></i></div>'
-                            }
-                        </div>
-                        <div style="flex: 2;">
-                            <table style="width: 100%;">
-                                <tr>
-                                    <td style="padding: 8px; width: 40%;"><strong>Matricule:</strong></td>
-                                    <td style="padding: 8px;">${worker.matricule}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px;"><strong>Nom:</strong></td>
-                                    <td style="padding: 8px;">${worker.fullName}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px;"><strong>Fonction:</strong></td>
-                                    <td style="padding: 8px;">${worker.function}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px;"><strong>Date d'embauche:</strong></td>
-                                    <td style="padding: 8px;">${worker.hiredDate}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px;"><strong>Statut:</strong></td>
-                                    <td style="padding: 8px;"><span class="badge badge-success">Actif</span></td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <div style="margin: 2rem 0;">
-                        <p><strong>Description:</strong> ${worker.description || 'Aucune description'}</p>
-                    </div>
-                    
-                    <div class="communique-signature">
-                        <p>Le Directeur</p>
-                        <div class="signature-line"></div>
-                    </div>
-                    
-                    <div style="text-align: center; margin-top: 2rem; font-size: 0.9rem; color: #666;">
-                        <p>Cette carte est valide pour l'année scolaire ${new Date().getFullYear()}-${new Date().getFullYear() + 1}</p>
-                        <p>Émise le ${formattedDate}</p>
-                    </div>
-                </div>
-            `;
-            
-            cardContent.innerHTML = cardHTML;
-            document.getElementById('worker-card-modal').classList.remove('hidden');
-        };
-
-        // 34. IMPRESSION DE LA CARTE
-        document.getElementById('print-worker-card-btn').addEventListener('click', () => {
-            const cardContent = document.getElementById('worker-card-content').innerHTML;
-            const printWindow = window.open('', '_blank');
-            
-            const printHTML = `
-                <!DOCTYPE html>
-                <html>
-                    <head>
-                        <title>Carte du personnel - CS la Colombe</title>
-                        <style>
-                            body { 
-                                font-family: Arial, sans-serif; 
-                                margin: 30px; 
-                                font-size: 12px;
-                            }
-                            .communique-preview { 
-                                border: 1px solid #ddd; 
-                                padding: 20px; 
-                                max-width: 600px; 
-                                margin: 0 auto;
-                            }
-                            .communique-header { 
-                                text-align: center; 
-                                margin-bottom: 20px; 
-                            }
-                            .communique-logo { 
-                                max-width: 100px; 
-                                margin-bottom: 10px; 
-                            }
-                            .communique-title { 
-                                font-size: 16px; 
-                                font-weight: bold; 
-                                margin: 10px 0; 
-                            }
-                            table { 
-                                width: 100%; 
-                            }
-                            td { 
-                                padding: 6px; 
-                            }
-                            .communique-signature { 
-                                margin-top: 30px; 
-                                text-align: right; 
-                            }
-                            .signature-line { 
-                                border-top: 1px solid #000; 
-                                margin-top: 30px; 
-                                width: 250px; 
-                                margin-left: auto; 
-                            }
-                            .badge { 
-                                display: inline-block; 
-                                padding: 3px 8px; 
-                                border-radius: 4px; 
-                                background: #27ae60; 
-                                color: white; 
-                                font-size: 10px; 
-                            }
-                            @media print {
-                                body { margin: 10px; }
-                                .communique-preview { border: 1px solid #000; }
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${cardContent}
-                        <script>
-                            window.onload = function() {
-                                window.print();
-                                setTimeout(function() {
-                                    window.close();
-                                }, 1000);
-                            }
-                        <\/script>
-                    </body>
-                </html>
-            `;
-            
-            printWindow.document.write(printHTML);
-            printWindow.document.close();
-        });
-
-        // 35. BOUTON RETOUR POUR LA CARTE
-        document.getElementById('back-worker-card-btn').addEventListener('click', () => {
-            document.getElementById('worker-card-modal').classList.add('hidden');
-        });
-
-        // 36. NAVIGATION ENTRE LES PAGES
-        document.querySelectorAll('.nav-menu a').forEach(link => {
-            link.addEventListener('click', e => {
-                e.preventDefault();
-                document.querySelectorAll('.nav-menu a, .page').forEach(el => el.classList.remove('active'));
-                link.classList.add('active');
-                document.getElementById(link.dataset.page + '-page').classList.add('active');
-                document.getElementById('page-title').textContent = link.textContent;
-                
-                // Fermer le menu sur mobile
-                if (window.innerWidth <= 768) {
-                    document.querySelector('.sidebar').classList.add('collapsed');
-                }
-            });
-        });
-
-        // 37. NAVIGATION ENTRE LES ONGLETS
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                const tabId = tab.dataset.tab;
-                document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
-                tab.classList.add('active');
-                
-                // Onglets principaux
-                if (tabId === 'teachers' || tabId === 'workers') {
-                    document.getElementById(tabId + '-tab').classList.add('active');
-                }
-                
-                // Onglets archives
-                if (tabId === 'archive-teachers' || tabId === 'archive-workers') {
-                    document.getElementById(tabId + '-tab').classList.add('active');
-                }
-            });
-        });
-
-        // 38. GESTION DU MENU BURGER
-        document.getElementById('menu-toggle').addEventListener('click', () => {
-            document.querySelector('.sidebar').classList.toggle('collapsed');
-        });
-
-        // 39. FERMER LE MENU EN CLIQUANT À L'EXTÉRIEUR SUR MOBILE
-        document.addEventListener('click', (e) => {
-            const sidebar = document.querySelector('.sidebar');
-            const menuToggle = document.getElementById('menu-toggle');
-            
-            if (window.innerWidth <= 768 && 
-                !sidebar.contains(e.target) && 
-                !menuToggle.contains(e.target) &&
-                !sidebar.classList.contains('collapsed')) {
-                sidebar.classList.add('collapsed');
-            }
-        });
-
-        // 40. GESTION DES BOUTONS FERMER MODAL
-        document.querySelectorAll('.close-modal').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.modal').forEach(modal => modal.classList.add('hidden'));
-            });
-        });
-
-        // 41. FERMER LES MODALS EN CLIQUANT À L'EXTÉRIEUR
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.classList.add('hidden');
-                }
-            });
-        });
-    </script>
-<script>
-window.editWorker = async (workerMatricule) => {
-    try {
-        const workerDoc = await getDoc(doc(db, 'workers', workerMatricule));
-        
-        if (!workerDoc.exists()) {
-            showAlert('Personnel non trouvé.', 'error');
-            return;
-        }
-        
-        const data = workerDoc.data();
-        
-        // Remplir le formulaire avec les données existantes
-        document.getElementById('worker-name').value = data.fullName;
-        document.getElementById('worker-birthdate').value = data.birthdate;
-        document.getElementById('worker-birthplace').value = data.birthplace;
-        document.getElementById('worker-gender').value = data.gender;
-        document.getElementById('worker-address').value = data.address;
-        document.getElementById('worker-phone').value = data.phone;
-        document.getElementById('worker-function').value = data.function;
-        document.getElementById('worker-description').value = data.description || '';
-        
-        // Afficher la photo existante
-        if (data.photoURL) {
-            document.getElementById('worker-photo-preview').innerHTML = 
-                `<img src="${data.photoURL}" class="photo-preview">`;
-        }
-        
-        // Changer le bouton pour "Modifier"
-        const submitBtn = document.getElementById('worker-submit-btn');
-        submitBtn.textContent = 'Modifier le Personnel';
-        submitBtn.classList.remove('btn-primary');
-        submitBtn.classList.add('btn-warning');
-        
-        // Stocker l'ID du personnel à modifier
-        submitBtn.dataset.editingId = workerMatricule;
-        
-        // Faire défiler vers le formulaire
-        document.getElementById('worker-form').scrollIntoView({ behavior: 'smooth' });
-        
-        showAlert(`Mode édition activé pour ${data.fullName}`, 'info');
-        
-    } catch (error) {
-        showAlert('Erreur lors du chargement des données: ' + error.message, 'error');
-    }
-};
-
 </script>
 </body>
 </html>

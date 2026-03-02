@@ -22,8 +22,7 @@
 
 <!-- Service Worker et mise à jour -->
    
-  <meta name="version" content="2.1.0">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+
 
   <!-- Apple Touch Icons -->
   <link rel="apple-touch-icon" href="icon-192x192.png">
@@ -308,6 +307,73 @@
             border-radius: 50%; 
             display: inline-block;
         }
+/* Amélioration des activités récentes */
+#recent-activities {
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 10px;
+    position: relative;
+}
+
+#recent-activities::-webkit-scrollbar {
+    width: 8px;
+}
+
+#recent-activities::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#recent-activities::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 4px;
+}
+
+#recent-activities::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary);
+}
+
+/* Animation pour les nouvelles activités */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+#recent-activities > div {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Style pour le bouton rafraîchir */
+.refresh-activities {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+.refresh-activities button {
+    padding: 5px 10px;
+    font-size: 12px;
+    border-radius: 20px;
+    background: white;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.refresh-activities button:hover {
+    background: var(--primary);
+    color: white;
+    transform: rotate(180deg);
+}
+
         .status-online { background: var(--success); }
         .status-offline { background: var(--danger); }
         
@@ -1161,24 +1227,7 @@
                         <button id="confirm-payment-btn" class="btn btn-success" style="margin-top: 1rem;">Confirmer le Paiement</button>
                     </div>
                     
-                    <div class="card">
-                        <h4>Paiements en attente</h4>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Code</th>
-                                        <th>Élève</th>
-                                        <th>Mois</th>
-                                        <th>Type</th>
-                                        <th>Montant</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="pending-payments-list"></tbody>
-                            </table>
-                        </div>
-                    </div>
+       
                     
                     <div class="card">
                         <h4>Paiements sur place</h4>
@@ -2040,22 +2089,27 @@
         const splashScreen = document.getElementById('splash-screen');
         let currentSecretary = null;
 
-        // Variables pour stocker les photos temporairement
-        let studentPhotoFile = null;
-        let teacherPhotoFile = null;
-        let profilePhotoFile = null;
-        let primaryStudentPhotoFile = null;
-        let primaryTeacherPhotoFile = null;
-        let kindergartenStudentPhotoFile = null;
-        let kindergartenTeacherPhotoFile = null;
+      // REMPLACER la section des variables globales (vers la ligne 1100-1110 environ)
+// par ceci :
 
-        // Variables pour la gestion hors ligne
-        let isOnline = navigator.onLine;
-        let deferredPrompt = null;
-        let offlineQueue = [];
+// Variables pour stocker les photos temporairement
+let studentPhotoFile = null;
+let teacherPhotoFile = null;
+let profilePhotoFile = null;
+let primaryStudentPhotoFile = null;
+let primaryTeacherPhotoFile = null;
+let kindergartenStudentPhotoFile = null;
+let kindergartenTeacherPhotoFile = null;
 
-        // Dernier élève inscrit (pour l'impression du bordereau)
-        let lastEnrolledStudent = null;
+// Variables pour la gestion hors ligne
+let isOnline = navigator.onLine;
+let deferredPrompt = null;
+let offlineQueue = [];
+
+// Derniers élèves inscrits (un par type)
+let lastEnrolledSecondaryStudent = null;
+let lastEnrolledPrimaryStudent = null;
+let lastEnrolledKindergartenStudent = null;
 
         // --- Gestion des photos ---
         document.getElementById('student-photo').addEventListener('change', function(e) {
@@ -2533,132 +2587,373 @@
             }
         }
 
-        async function loadRecentActivities() {
-            const activitiesEl = document.getElementById('recent-activities');
-            activitiesEl.innerHTML = '<p>Chargement...</p>';
+        // REMPLACER COMPLÈTEMENT votre fonction loadRecentActivities() par celle-ci
+async function loadRecentActivities() {
+    const activitiesEl = document.getElementById('recent-activities');
+    activitiesEl.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading-spinner" style="width: 30px; height: 30px;"></div><p style="margin-top: 10px;">Chargement des activités...</p></div>';
+    
+    try {
+        // Récupérer les activités SANS utiliser orderBy() d'abord pour éviter les erreurs d'index
+        const activities = [];
+        
+        // Helper pour formater le temps écoulé
+        const getTimeAgo = (date) => {
+            if (!date) return 'Date inconnue';
             
-            try {
-                // Récupérer les 10 dernières activités
-                const activities = [];
-                
-                // Récupérer les dernières inscriptions d'élèves secondaires
-                const studentsSnap = await getDocs(query(collection(db, 'students'), where('status', '!=', 'deleted'), orderBy('createdAt', 'desc')));
-                studentsSnap.forEach(doc => {
-                    const data = doc.data();
-                    activities.push({
-                        type: 'student_enrollment',
-                        message: `Nouvel élève secondaire inscrit: ${data.fullName}`,
-                        date: data.createdAt?.toDate(),
-                        icon: 'fa-user-plus',
-                        color: 'success'
-                    });
-                });
-                
-                // Récupérer les dernières inscriptions d'élèves primaires
-                const primaryStudentsSnap = await getDocs(query(collection(db, 'primary_students'), where('status', '!=', 'deleted'), orderBy('createdAt', 'desc')));
-                primaryStudentsSnap.forEach(doc => {
-                    const data = doc.data();
-                    activities.push({
-                        type: 'primary_student_enrollment',
-                        message: `Nouvel élève primaire inscrit: ${data.fullName}`,
-                        date: data.createdAt?.toDate(),
-                        icon: 'fa-user-plus',
-                        color: 'info'
-                    });
-                });
-                
-                // Récupérer les dernières inscriptions d'élèves maternelles
-                const kindergartenStudentsSnap = await getDocs(query(collection(db, 'kindergarten_students'), where('status', '!=', 'deleted'), orderBy('createdAt', 'desc')));
-                kindergartenStudentsSnap.forEach(doc => {
-                    const data = doc.data();
-                    activities.push({
-                        type: 'kindergarten_student_enrollment',
-                        message: `Nouvel élève maternelle inscrit: ${data.fullName}`,
-                        date: data.createdAt?.toDate(),
-                        icon: 'fa-user-plus',
-                        color: 'info'
-                    });
-                });
-                
-                // Récupérer les dernières inscriptions d'enseignants secondaires
-                const teachersSnap = await getDocs(query(collection(db, 'teachers'), where('status', '!=', 'deleted'), orderBy('createdAt', 'desc')));
-                teachersSnap.forEach(doc => {
-                    const data = doc.data();
-                    activities.push({
-                        type: 'teacher_enrollment',
-                        message: `Nouvel enseignant secondaire inscrit: ${data.fullName}`,
-                        date: data.createdAt?.toDate(),
-                        icon: 'fa-user-tie',
-                        color: 'info'
-                    });
-                });
-                
-                // Récupérer les dernières inscriptions d'enseignants primaires
-                const primaryTeachersSnap = await getDocs(query(collection(db, 'primary_teachers'), where('status', '!=', 'deleted'), orderBy('createdAt', 'desc')));
-                primaryTeachersSnap.forEach(doc => {
-                    const data = doc.data();
-                    activities.push({
-                        type: 'primary_teacher_enrollment',
-                        message: `Nouvel enseignant primaire inscrit: ${data.fullName}`,
-                        date: data.createdAt?.toDate(),
-                        icon: 'fa-user-tie',
-                        color: 'info'
-                    });
-                });
-                
-                // Récupérer les dernières inscriptions d'enseignants maternelles
-                const kindergartenTeachersSnap = await getDocs(query(collection(db, 'kindergarten_teachers'), where('status', '!=', 'deleted'), orderBy('createdAt', 'desc')));
-                kindergartenTeachersSnap.forEach(doc => {
-                    const data = doc.data();
-                    activities.push({
-                        type: 'kindergarten_teacher_enrollment',
-                        message: `Nouvel enseignant maternelle inscrit: ${data.fullName}`,
-                        date: data.createdAt?.toDate(),
-                        icon: 'fa-user-tie',
-                        color: 'info'
-                    });
-                });
-                
-                // Récupérer les derniers paiements
-                const paymentsSnap = await getDocs(query(collection(db, 'payments'), orderBy('validatedAt', 'desc')));
-                paymentsSnap.forEach(doc => {
-                    const data = doc.data();
-                    activities.push({
-                        type: 'payment',
-                        message: `Paiement validé pour ${data.studentName}: $${data.amount}`,
-                        date: data.validatedAt?.toDate(),
-                        icon: 'fa-money-bill-wave',
-                        color: 'success'
-                    });
-                });
-                
-                // Trier par date et prendre les 10 plus récentes
-                activities.sort((a, b) => b.date - a.date);
-                const recentActivities = activities.slice(0, 10);
-                
-                let activitiesHTML = '';
-                
-                if (recentActivities.length === 0) {
-                    activitiesHTML = '<p>Aucune activité récente</p>';
-                } else {
-                    recentActivities.forEach(activity => {
-                        activitiesHTML += `
-                            <div style="padding: 10px 0; border-bottom: 1px solid #eee;">
-                                <i class="fas ${activity.icon}" style="color: var(--${activity.color});"></i>
-                                <span>${activity.message}</span>
-                                <small style="color: #666; display: block;">${formatDate(activity.date)}</small>
-                            </div>
-                        `;
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHour = Math.floor(diffMin / 60);
+            const diffDay = Math.floor(diffHour / 24);
+            
+            if (diffSec < 60) return `Il y a ${diffSec} seconde${diffSec > 1 ? 's' : ''}`;
+            if (diffMin < 60) return `Il y a ${diffMin} minute${diffMin > 1 ? 's' : ''}`;
+            if (diffHour < 24) return `Il y a ${diffHour} heure${diffHour > 1 ? 's' : ''}`;
+            if (diffDay < 7) return `Il y a ${diffDay} jour${diffDay > 1 ? 's' : ''}`;
+            return date.toLocaleDateString('fr-FR');
+        };
+        
+        // Récupérer les dernières inscriptions d'élèves (sans orderBy pour éviter les erreurs d'index)
+        try {
+            // Élèves secondaires - récupérer tous puis trier manuellement
+            const studentsSnap = await getDocs(collection(db, 'students'));
+            const studentsList = [];
+            studentsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.status !== 'deleted' && data.createdAt) {
+                    studentsList.push({
+                        ...data,
+                        type: 'secondary',
+                        collection: 'students'
                     });
                 }
-                
-                activitiesEl.innerHTML = activitiesHTML;
-            } catch (error) {
-                console.error("Erreur chargement activités:", error);
-                activitiesEl.innerHTML = '<p>Erreur de chargement</p>';
-            }
+            });
+            
+            // Trier manuellement par date (les plus récentes d'abord)
+            studentsList.sort((a, b) => {
+                const dateA = a.createdAt?.toDate?.() || new Date(0);
+                const dateB = b.createdAt?.toDate?.() || new Date(0);
+                return dateB - dateA;
+            });
+            
+            // Prendre les 2 plus récentes seulement
+            studentsList.slice(0, 2).forEach(data => {
+                activities.push({
+                    type: 'student_enrollment',
+                    category: 'Secondaire',
+                    message: `${data.fullName} (${data.matricule})`,
+                    detail: `Classe: ${data.class}`,
+                    date: data.createdAt?.toDate(),
+                    icon: 'fa-user-graduate',
+                    color: 'primary',
+                    user: data.parentName ? `Parent: ${data.parentName}` : ''
+                });
+            });
+        } catch (error) {
+            console.log("Erreur chargement élèves secondaires:", error);
         }
-
+        
+        try {
+            // Élèves primaires
+            const primarySnap = await getDocs(collection(db, 'primary_students'));
+            const primaryList = [];
+            primarySnap.forEach(doc => {
+                const data = doc.data();
+                if (data.status !== 'deleted' && data.createdAt) {
+                    primaryList.push({
+                        ...data,
+                        type: 'primary',
+                        collection: 'primary_students'
+                    });
+                }
+            });
+            
+            primaryList.sort((a, b) => {
+                const dateA = a.createdAt?.toDate?.() || new Date(0);
+                const dateB = b.createdAt?.toDate?.() || new Date(0);
+                return dateB - dateA;
+            });
+            
+            primaryList.slice(0, 2).forEach(data => {
+                activities.push({
+                    type: 'student_enrollment',
+                    category: 'Primaire',
+                    message: `${data.fullName} (${data.matricule})`,
+                    detail: `Classe: ${data.class}`,
+                    date: data.createdAt?.toDate(),
+                    icon: 'fa-child',
+                    color: 'success',
+                    user: data.parentName ? `Parent: ${data.parentName}` : ''
+                });
+            });
+        } catch (error) {
+            console.log("Erreur chargement élèves primaires:", error);
+        }
+        
+        try {
+            // Élèves maternelles
+            const kindergartenSnap = await getDocs(collection(db, 'kindergarten_students'));
+            const kindergartenList = [];
+            kindergartenSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.status !== 'deleted' && data.createdAt) {
+                    kindergartenList.push({
+                        ...data,
+                        type: 'kindergarten',
+                        collection: 'kindergarten_students'
+                    });
+                }
+            });
+            
+            kindergartenList.sort((a, b) => {
+                const dateA = a.createdAt?.toDate?.() || new Date(0);
+                const dateB = b.createdAt?.toDate?.() || new Date(0);
+                return dateB - dateA;
+            });
+            
+            kindergartenList.slice(0, 2).forEach(data => {
+                activities.push({
+                    type: 'student_enrollment',
+                    category: 'Maternelle',
+                    message: `${data.fullName} (${data.matricule})`,
+                    detail: `Classe: ${data.class}`,
+                    date: data.createdAt?.toDate(),
+                    icon: 'fa-baby',
+                    color: 'info',
+                    user: data.parentName ? `Parent: ${data.parentName}` : ''
+                });
+            });
+        } catch (error) {
+            console.log("Erreur chargement élèves maternelles:", error);
+        }
+        
+        // Récupérer les enseignants (seulement 1 par catégorie pour limiter)
+        try {
+            // Enseignants secondaires
+            const teachersSnap = await getDocs(collection(db, 'teachers'));
+            const teachersList = [];
+            teachersSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.status !== 'deleted' && data.createdAt) {
+                    teachersList.push({
+                        ...data,
+                        type: 'secondary',
+                        collection: 'teachers'
+                    });
+                }
+            });
+            
+            teachersList.sort((a, b) => {
+                const dateA = a.createdAt?.toDate?.() || new Date(0);
+                const dateB = b.createdAt?.toDate?.() || new Date(0);
+                return dateB - dateA;
+            });
+            
+            teachersList.slice(0, 1).forEach(data => {
+                activities.push({
+                    type: 'teacher_enrollment',
+                    category: 'Secondaire',
+                    message: `${data.fullName} (${data.matricule})`,
+                    detail: data.subjects ? `Matières: ${data.subjects.join(', ').substring(0, 30)}` : '',
+                    date: data.createdAt?.toDate(),
+                    icon: 'fa-chalkboard-teacher',
+                    color: 'warning',
+                    classes: data.classes ? `${data.classes.length} classe(s)` : ''
+                });
+            });
+        } catch (error) {
+            console.log("Erreur chargement enseignants secondaires:", error);
+        }
+        
+        try {
+            // Enseignants primaires
+            const primaryTeachersSnap = await getDocs(collection(db, 'primary_teachers'));
+            const primaryTeachersList = [];
+            primaryTeachersSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.status !== 'deleted' && data.createdAt) {
+                    primaryTeachersList.push({
+                        ...data,
+                        type: 'primary',
+                        collection: 'primary_teachers'
+                    });
+                }
+            });
+            
+            primaryTeachersList.sort((a, b) => {
+                const dateA = a.createdAt?.toDate?.() || new Date(0);
+                const dateB = b.createdAt?.toDate?.() || new Date(0);
+                return dateB - dateA;
+            });
+            
+            primaryTeachersList.slice(0, 1).forEach(data => {
+                activities.push({
+                    type: 'teacher_enrollment',
+                    category: 'Primaire',
+                    message: `${data.fullName} (${data.matricule})`,
+                    detail: '',
+                    date: data.createdAt?.toDate(),
+                    icon: 'fa-chalkboard-teacher',
+                    color: 'warning',
+                    classes: data.classes ? `${data.classes.length} classe(s)` : ''
+                });
+            });
+        } catch (error) {
+            console.log("Erreur chargement enseignants primaires:", error);
+        }
+        
+        try {
+            // Enseignants maternelles
+            const kindergartenTeachersSnap = await getDocs(collection(db, 'kindergarten_teachers'));
+            const kindergartenTeachersList = [];
+            kindergartenTeachersSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.status !== 'deleted' && data.createdAt) {
+                    kindergartenTeachersList.push({
+                        ...data,
+                        type: 'kindergarten',
+                        collection: 'kindergarten_teachers'
+                    });
+                }
+            });
+            
+            kindergartenTeachersList.sort((a, b) => {
+                const dateA = a.createdAt?.toDate?.() || new Date(0);
+                const dateB = b.createdAt?.toDate?.() || new Date(0);
+                return dateB - dateA;
+            });
+            
+            kindergartenTeachersList.slice(0, 1).forEach(data => {
+                activities.push({
+                    type: 'teacher_enrollment',
+                    category: 'Maternelle',
+                    message: `${data.fullName} (${data.matricule})`,
+                    detail: '',
+                    date: data.createdAt?.toDate(),
+                    icon: 'fa-chalkboard-teacher',
+                    color: 'warning',
+                    classes: data.classes ? `${data.classes.length} classe(s)` : ''
+                });
+            });
+        } catch (error) {
+            console.log("Erreur chargement enseignants maternelles:", error);
+        }
+        
+        // Récupérer les paiements (seulement les 5 plus récents)
+        try {
+            const paymentsSnap = await getDocs(collection(db, 'payments'));
+            const paymentsList = [];
+            paymentsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.validatedAt) {
+                    paymentsList.push({
+                        id: doc.id,
+                        ...data
+                    });
+                }
+            });
+            
+            paymentsList.sort((a, b) => {
+                const dateA = a.validatedAt?.toDate?.() || new Date(0);
+                const dateB = b.validatedAt?.toDate?.() || new Date(0);
+                return dateB - dateA;
+            });
+            
+            paymentsList.slice(0, 3).forEach(data => {
+                activities.push({
+                    type: 'payment',
+                    message: `${data.studentName}`,
+                    detail: `${data.paymentType} - ${data.month}`,
+                    amount: `$${data.amount.toFixed(2)}`,
+                    date: data.validatedAt?.toDate(),
+                    icon: 'fa-money-bill-wave',
+                    color: 'success',
+                    method: data.paymentMethod === 'online' ? 'En ligne' : 'Sur place'
+                });
+            });
+        } catch (error) {
+            console.log("Erreur chargement paiements:", error);
+        }
+        
+        // Trier toutes les activités par date
+        activities.sort((a, b) => (b.date || 0) - (a.date || 0));
+        
+        // NE PRENDRE QUE LES 5 PLUS RÉCENTES
+        const recentActivities = activities.slice(0, 5);
+        
+        let activitiesHTML = '';
+        
+        if (recentActivities.length === 0) {
+            activitiesHTML = `
+                <div style="text-align: center; padding: 40px 20px;">
+                    <i class="fas fa-calendar-alt" style="font-size: 48px; color: #ccc; margin-bottom: 15px;"></i>
+                    <p style="color: #666;">Aucune activité récente</p>
+                </div>
+            `;
+        } else {
+            activitiesHTML = `
+                <div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                    ${recentActivities.map(activity => {
+                        const timeAgo = activity.date ? getTimeAgo(activity.date) : '';
+                        
+                        return `
+                            <div style="padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid var(--${activity.color}); transition: all 0.2s;">
+                                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                                    <div style="background: var(--${activity.color}); width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0;">
+                                        <i class="fas ${activity.icon}" style="font-size: 14px;"></i>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                            <div>
+                                                <strong style="font-size: 13px;">${activity.message}</strong>
+                                                ${activity.category ? `<span style="background: #e9ecef; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 5px;">${activity.category}</span>` : ''}
+                                            </div>
+                                            <span style="font-size: 10px; color: #999;" title="${activity.date ? activity.date.toLocaleString('fr-FR') : ''}">
+                                                ${timeAgo}
+                                            </span>
+                                        </div>
+                                        <div style="font-size: 12px; color: #666;">
+                                            ${activity.detail || ''}
+                                            ${activity.amount ? ` • <span style="color: var(--success);">${activity.amount}</span>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+        
+        // Ajouter un petit en-tête avec le nombre d'activités
+        const headerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h5 style="margin: 0; font-size: 14px; color: #666;">
+                    <i class="fas fa-history" style="color: var(--primary);"></i> 
+                    5 dernières activités
+                </h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadRecentActivities()" style="padding: 2px 8px; font-size: 11px;">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        `;
+        
+        activitiesEl.innerHTML = headerHTML + activitiesHTML;
+        
+    } catch (error) {
+        console.error("Erreur chargement activités:", error);
+        activitiesEl.innerHTML = `
+            <div style="text-align: center; padding: 30px; color: var(--danger);">
+                <i class="fas fa-exclamation-triangle" style="font-size: 40px; margin-bottom: 10px;"></i>
+                <p>Erreur de chargement</p>
+                <button class="btn btn-sm btn-primary" onclick="loadRecentActivities()" style="margin-top: 10px;">
+                    <i class="fas fa-redo"></i> Réessayer
+                </button>
+            </div>
+        `;
+    }
+}
         // --- Inscription Élève Secondaire (optimisée) ---
         document.getElementById('student-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -2741,7 +3036,8 @@
                 console.log("Élève sauvegardé dans Firestore");
 
                 // Sauvegarder le dernier élève inscrit pour l'impression
-                lastEnrolledStudent = { ...studentData, id: matricule };
+                lastEnrolledSecondaryStudent = { ...studentData, id: matricule };
+
                 
                 // Enregistrer les frais d'inscription comme un paiement
                 if (enrollmentFees > 0) {
@@ -2875,7 +3171,7 @@
                 console.log("Élève primaire sauvegardé dans Firestore");
 
                 // Sauvegarder le dernier élève inscrit pour l'impression
-                lastEnrolledStudent = { ...studentData, id: matricule };
+                lastEnrolledPrimaryStudent = { ...studentData, id: matricule };
                 
                 // Enregistrer les frais d'inscription comme un paiement
                 if (enrollmentFees > 0) {
@@ -3009,7 +3305,7 @@
                 console.log("Élève maternelle sauvegardé dans Firestore");
 
                 // Sauvegarder le dernier élève inscrit pour l'impression
-                lastEnrolledStudent = { ...studentData, id: matricule };
+                lastEnrolledKindergartenStudent = { ...studentData, id: matricule };
                 
                 // Enregistrer les frais d'inscription comme un paiement
                 if (enrollmentFees > 0) {
@@ -3062,6 +3358,33 @@
                 submitBtn.disabled = false;
             }
         });
+
+// Fonction pour vérifier les mois déjà payés par un élève
+async function getPaidMonthsForStudent(studentMatricule, paymentType = null) {
+    try {
+        let queryConstraints = [where('studentId', '==', studentMatricule)];
+        
+        // Si un type de paiement est spécifié
+        if (paymentType) {
+            queryConstraints.push(where('paymentType', '==', paymentType));
+        }
+        
+        const paymentsSnap = await getDocs(query(collection(db, 'payments'), ...queryConstraints));
+        
+        const paidMonths = new Set();
+        paymentsSnap.forEach(doc => {
+            const data = doc.data();
+            if (data.month && data.month !== 'inscription') {
+                paidMonths.add(data.month);
+            }
+        });
+        
+        return paidMonths;
+    } catch (error) {
+        console.error("Erreur vérification mois payés:", error);
+        return new Set();
+    }
+}
 
         // --- Inscription Enseignant Secondaire (optimisée) ---
         async function loadTeacherClasses() {
@@ -3829,52 +4152,79 @@ async function loadAllClassesForReports() {
         });
 
         document.getElementById('confirm-payment-btn').addEventListener('click', async () => {
-            if (!foundRequest) return;
-            
-            try {
-                const batch = writeBatch(db);
-                batch.update(doc(db, 'payment_requests', foundRequest.id), { 
-                    status: 'paid',
-                    validatedAt: serverTimestamp(),
-                    validatedBy: currentSecretary.uid
-                });
+    if (!foundRequest) return;
+    
+    try {
+        const data = foundRequest.data();
+        const unpaidMonths = foundRequest._unpaidMonths || data.months;
+        const unpaidAmount = foundRequest._unpaidAmount || data.amount;
+        
+        if (unpaidMonths.length === 0) {
+            showAlert('Aucun mois à payer.', 'error');
+            return;
+        }
+        
+        const batch = writeBatch(db);
+        
+        // Marquer la demande comme partiellement payée si certains mois sont déjà payés
+        if (unpaidMonths.length < data.months.length) {
+            batch.update(doc(db, 'payment_requests', foundRequest.id), { 
+                status: 'partial',
+                validatedAt: serverTimestamp(),
+                validatedBy: currentSecretary.uid,
+                paidMonths: unpaidMonths,
+                remainingMonths: data.months.filter(m => !unpaidMonths.includes(m))
+            });
+        } else {
+            batch.update(doc(db, 'payment_requests', foundRequest.id), { 
+                status: 'paid',
+                validatedAt: serverTimestamp(),
+                validatedBy: currentSecretary.uid
+            });
+        }
 
-                const data = foundRequest.data();
-                data.months.forEach(month => {
-                    const paymentDocRef = doc(collection(db, 'payments'));
-                    batch.set(paymentDocRef, {
-                        studentId: data.studentId,
-                        studentName: data.studentName,
-                        studentClass: data.studentClass,
-                        studentType: data.studentType || 'secondary',
-                        month: month,
-                        paymentType: data.paymentType || 'Frais scolaires',
-                        amount: data.amount / data.months.length,
-                        validatedBy: currentSecretary.uid,
-                        validatedAt: serverTimestamp(),
-                        createdAt: serverTimestamp(),
-                        paymentMethod: 'online'
-                    });
-                });
-
-                await batch.commit();
-                
-                // Générer le reçu
-                await generateReceipt(data.studentName, data.months, data.amount, data.paymentCode, data.studentClass, data.paymentType);
-                
-                showAlert('Paiement validé avec succès !', 'success');
-                document.getElementById('payment-details-card').classList.add('hidden');
-                document.getElementById('payment-code-input').value = '';
-                foundRequest = null;
-                
-                // Mettre à jour les listes
-                loadPendingPaymentsList();
-                loadDashboardStats();
-                loadFeesData();
-            } catch (error) {
-                showAlert('Erreur de validation: ' + error.message, 'error');
-            }
+        // Enregistrer les paiements pour les mois non payés
+        const amountPerMonth = unpaidAmount / unpaidMonths.length;
+        
+        unpaidMonths.forEach(month => {
+            const paymentDocRef = doc(collection(db, 'payments'));
+            batch.set(paymentDocRef, {
+                studentId: data.studentId,
+                studentName: data.studentName,
+                studentClass: data.studentClass,
+                studentType: data.studentType || 'secondary',
+                month: month,
+                paymentType: data.paymentType || 'Frais scolaires',
+                amount: amountPerMonth,
+                validatedBy: currentSecretary.uid,
+                validatedAt: serverTimestamp(),
+                createdAt: serverTimestamp(),
+                paymentMethod: 'online'
+            });
         });
+
+        await batch.commit();
+        
+        // Générer le reçu
+        await generateReceipt(data.studentName, unpaidMonths, unpaidAmount, data.paymentCode, data.studentClass, data.paymentType);
+        
+        const message = unpaidMonths.length < data.months.length 
+            ? `Paiement validé pour ${unpaidMonths.length} mois sur ${data.months.length} (les autres étaient déjà payés) !`
+            : 'Paiement validé avec succès !';
+        
+        showAlert(message, 'success');
+        document.getElementById('payment-details-card').classList.add('hidden');
+        document.getElementById('payment-code-input').value = '';
+        foundRequest = null;
+        
+        // Mettre à jour les listes
+        loadPendingPaymentsList();
+        loadDashboardStats();
+        loadFeesData();
+    } catch (error) {
+        showAlert('Erreur de validation: ' + error.message, 'error');
+    }
+});
 
         async function loadPendingPaymentsList() {
             const listEl = document.getElementById('pending-payments-list');
@@ -3913,85 +4263,125 @@ async function loadAllClassesForReports() {
         }
 
         // --- Paiements sur place (CORRIGÉ) ---
-        function setupPaymentForm() {
-            const studentIdInput = document.getElementById('onsite-student-id');
-            const studentTypeSelect = document.getElementById('onsite-student-type');
-            const monthlyAmountInput = document.getElementById('onsite-monthly-amount');
+        // Version améliorée de setupPaymentForm
+function setupPaymentForm() {
+    const studentIdInput = document.getElementById('onsite-student-id');
+    const studentTypeSelect = document.getElementById('onsite-student-type');
+    const paymentTypeSelect = document.getElementById('onsite-payment-type');
+    const monthlyAmountInput = document.getElementById('onsite-monthly-amount');
+    
+    let currentStudentMatricule = null;
+    
+    studentIdInput.addEventListener('blur', async () => {
+        const matricule = studentIdInput.value.trim();
+        if (!matricule) return;
+        
+        currentStudentMatricule = matricule;
+        
+        try {
+            let studentDoc;
+            if (studentTypeSelect.value === 'secondary') {
+                studentDoc = await getDoc(doc(db, 'students', matricule));
+            } else if (studentTypeSelect.value === 'primary') {
+                studentDoc = await getDoc(doc(db, 'primary_students', matricule));
+            } else {
+                studentDoc = await getDoc(doc(db, 'kindergarten_students', matricule));
+            }
             
-            studentIdInput.addEventListener('blur', async () => {
-                const matricule = studentIdInput.value.trim();
-                if (!matricule) return;
+            if (studentDoc.exists()) {
+                const data = studentDoc.data();
+                document.getElementById('onsite-student-name').value = data.fullName;
+                document.getElementById('onsite-student-class').value = data.class;
                 
-                try {
-                    let studentDoc;
-                    if (studentTypeSelect.value === 'secondary') {
-                        studentDoc = await getDoc(doc(db, 'students', matricule));
-                    } else if (studentTypeSelect.value === 'primary') {
-                        studentDoc = await getDoc(doc(db, 'primary_students', matricule));
-                    } else {
-                        studentDoc = await getDoc(doc(db, 'kindergarten_students', matricule));
-                    }
-                    
-                    if (studentDoc.exists()) {
-                        const data = studentDoc.data();
-                        document.getElementById('onsite-student-name').value = data.fullName;
-                        document.getElementById('onsite-student-class').value = data.class;
-                        
-                        // Générer les checkboxes pour les mois
-                        generateMonthCheckboxes();
-                    } else {
-                        document.getElementById('onsite-student-name').value = '';
-                        document.getElementById('onsite-student-class').value = '';
-                        document.getElementById('onsite-amount').value = '';
-                        showAlert("Aucun élève trouvé avec ce matricule", "error");
-                    }
-                } catch (error) {
-                    console.error("Erreur recherche élève:", error);
-                }
-            });
-            
-            // Gérer l'affichage du champ de spécification pour "Autres"
-            document.getElementById('onsite-payment-type').addEventListener('change', function() {
-                const otherSpec = document.getElementById('onsite-payment-other');
-                if (this.value === 'Autres') {
-                    otherSpec.style.display = 'block';
-                    otherSpec.required = true;
-                } else {
-                    otherSpec.style.display = 'none';
-                    otherSpec.required = false;
-                    otherSpec.value = '';
-                }
-            });
-            
-            // Calcul automatique du montant total
-            monthlyAmountInput.addEventListener('input', updateTotalAmount);
+                // Générer les checkboxes pour les mois avec vérification des mois payés
+                const paymentType = paymentTypeSelect.value;
+                await generateMonthCheckboxes(matricule, paymentType === 'Autres' ? null : paymentType);
+            } else {
+                document.getElementById('onsite-student-name').value = '';
+                document.getElementById('onsite-student-class').value = '';
+                document.getElementById('onsite-amount').value = '';
+                showAlert("Aucun élève trouvé avec ce matricule", "error");
+            }
+        } catch (error) {
+            console.error("Erreur recherche élève:", error);
         }
-
-        function generateMonthCheckboxes() {
-            const container = document.getElementById('onsite-months-container');
-            const months = [
-                'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-                'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
-            ];
-            
-            let html = '';
-            months.forEach(month => {
-                html += `
-                    <div class="month-checkbox">
-                        <input type="checkbox" id="month-${month}" value="${month}" class="month-checkbox-input">
-                        <label for="month-${month}">${month}</label>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html;
-            
-            // Ajouter l'écouteur d'événements pour le calcul du montant total
-            document.querySelectorAll('.month-checkbox-input').forEach(checkbox => {
-                checkbox.addEventListener('change', updateTotalAmount);
-            });
+    });
+    
+    // Quand le type de paiement change, recharger les mois
+    paymentTypeSelect.addEventListener('change', async function() {
+        const otherSpec = document.getElementById('onsite-payment-other');
+        if (this.value === 'Autres') {
+            otherSpec.style.display = 'block';
+            otherSpec.required = true;
+        } else {
+            otherSpec.style.display = 'none';
+            otherSpec.required = false;
+            otherSpec.value = '';
         }
+        
+        // Recharger les mois avec le nouveau type de paiement
+        if (currentStudentMatricule) {
+            await generateMonthCheckboxes(currentStudentMatricule, this.value === 'Autres' ? null : this.value);
+        }
+    });
+    
+    // Calcul automatique du montant total
+    monthlyAmountInput.addEventListener('input', updateTotalAmount);
+}
 
+        // Version améliorée de generateMonthCheckboxes avec vérification des mois payés
+async function generateMonthCheckboxes(studentMatricule = null, paymentType = null) {
+    const container = document.getElementById('onsite-months-container');
+    const months = [
+        'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+    ];
+    
+    // Récupérer les mois déjà payés si un élève est sélectionné
+    let paidMonths = new Set();
+    if (studentMatricule) {
+        paidMonths = await getPaidMonthsForStudent(studentMatricule, paymentType);
+    }
+    
+    let html = '';
+    months.forEach(month => {
+        const isPaid = paidMonths.has(month);
+        html += `
+            <div class="month-checkbox" style="${isPaid ? 'opacity: 0.5;' : ''}">
+                <input type="checkbox" 
+                       id="month-${month}" 
+                       value="${month}" 
+                       class="month-checkbox-input"
+                       ${isPaid ? 'disabled' : ''}>
+                <label for="month-${month}" style="${isPaid ? 'color: #999; text-decoration: line-through;' : ''}">
+                    ${month} ${isPaid ? '(déjà payé)' : ''}
+                </label>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    
+    // Ajouter l'écouteur d'événements pour le calcul du montant total
+    document.querySelectorAll('.month-checkbox-input:not(:disabled)').forEach(checkbox => {
+        checkbox.addEventListener('change', updateTotalAmount);
+    });
+    
+    // Afficher un résumé des mois payés
+    if (paidMonths.size > 0) {
+        const paidMonthsList = Array.from(paidMonths).join(', ');
+        const summaryDiv = document.createElement('div');
+        summaryDiv.className = 'alert alert-info';
+        summaryDiv.style.marginTop = '10px';
+        summaryDiv.style.padding = '8px';
+        summaryDiv.style.fontSize = '12px';
+        summaryDiv.innerHTML = `
+            <i class="fas fa-info-circle"></i> 
+            Mois déjà payés: <strong>${paidMonthsList}</strong>
+        `;
+        container.appendChild(summaryDiv);
+    }
+}
         function updateTotalAmount() {
             const selectedMonths = document.querySelectorAll('.month-checkbox-input:checked');
             const monthlyAmount = parseFloat(document.getElementById('onsite-monthly-amount').value) || 0;
@@ -3999,115 +4389,114 @@ async function loadAllClassesForReports() {
             document.getElementById('onsite-amount').value = totalAmount.toFixed(2);
         }
 
-        document.getElementById('onsite-payment-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const studentMatricule = document.getElementById('onsite-student-id').value;
-            const studentName = document.getElementById('onsite-student-name').value;
-            const studentClass = document.getElementById('onsite-student-class').value;
-            const studentType = document.getElementById('onsite-student-type').value;
-            const paymentType = document.getElementById('onsite-payment-type').value;
-            const paymentOther = document.getElementById('onsite-payment-other').value;
-            const monthlyAmount = parseFloat(document.getElementById('onsite-monthly-amount').value);
-            const totalAmount = parseFloat(document.getElementById('onsite-amount').value);
-            
-            if (!studentMatricule || !studentName || !studentClass || !paymentType || !monthlyAmount || !totalAmount) {
-                showAlert("Veuillez remplir tous les champs", "error");
-                return;
-            }
-            
-            // Si le type est "Autres" mais pas de spécification
-            if (paymentType === 'Autres' && !paymentOther) {
-                showAlert("Veuillez spécifier le type de frais", "error");
-                return;
-            }
-            
-            // Récupérer les mois sélectionnés
-            const selectedMonths = [];
-            document.querySelectorAll('.month-checkbox-input:checked').forEach(checkbox => {
-                selectedMonths.push(checkbox.value);
+document.getElementById('onsite-payment-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const studentMatricule = document.getElementById('onsite-student-id').value;
+    const studentName = document.getElementById('onsite-student-name').value;
+    const studentClass = document.getElementById('onsite-student-class').value;
+    const studentType = document.getElementById('onsite-student-type').value;
+    const paymentType = document.getElementById('onsite-payment-type').value;
+    const paymentOther = document.getElementById('onsite-payment-other').value;
+    const monthlyAmount = parseFloat(document.getElementById('onsite-monthly-amount').value);
+    const totalAmount = parseFloat(document.getElementById('onsite-amount').value);
+    
+    if (!studentMatricule || !studentName || !studentClass || !paymentType || !monthlyAmount || !totalAmount) {
+        showAlert("Veuillez remplir tous les champs", "error");
+        return;
+    }
+    
+    // Si le type est "Autres" mais pas de spécification
+    if (paymentType === 'Autres' && !paymentOther) {
+        showAlert("Veuillez spécifier le type de frais", "error");
+        return;
+    }
+    
+    // Récupérer les mois sélectionnés (uniquement ceux non désactivés)
+    const selectedMonths = [];
+    document.querySelectorAll('.month-checkbox-input:not(:disabled):checked').forEach(checkbox => {
+        selectedMonths.push(checkbox.value);
+    });
+    
+    if (selectedMonths.length === 0) {
+        showAlert("Veuillez sélectionner au moins un mois non payé", "error");
+        return;
+    }
+    
+    // Vérifier que le montant total correspond
+    const calculatedTotal = selectedMonths.length * monthlyAmount;
+    if (Math.abs(totalAmount - calculatedTotal) > 0.01) {
+        showAlert("Le montant total ne correspond pas au nombre de mois sélectionnés", "error");
+        return;
+    }
+    
+    try {
+        // Vérifier si l'élève existe
+        let studentDoc;
+        if (studentType === 'secondary') {
+            studentDoc = await getDoc(doc(db, 'students', studentMatricule));
+        } else if (studentType === 'primary') {
+            studentDoc = await getDoc(doc(db, 'primary_students', studentMatricule));
+        } else {
+            studentDoc = await getDoc(doc(db, 'kindergarten_students', studentMatricule));
+        }
+        
+        if (!studentDoc.exists()) {
+            showAlert("Élève non trouvé", "error");
+            return;
+        }
+        
+        // Double vérification des mois déjà payés
+        const paidMonths = await getPaidMonthsForStudent(studentMatricule, paymentType === 'Autres' ? paymentOther : paymentType);
+        const alreadyPaidMonths = selectedMonths.filter(month => paidMonths.has(month));
+        
+        if (alreadyPaidMonths.length > 0) {
+            showAlert(`Le(s) mois suivant(s) sont déjà payés: ${alreadyPaidMonths.join(', ')}`, "error");
+            return;
+        }
+        
+        // Enregistrer les paiements
+        const batch = writeBatch(db);
+        
+        selectedMonths.forEach(month => {
+            const paymentDocRef = doc(collection(db, 'payments'));
+            batch.set(paymentDocRef, {
+                studentId: studentMatricule,
+                studentName: studentName,
+                studentClass: studentClass,
+                studentType: studentType,
+                month: month,
+                paymentType: paymentType === 'Autres' ? paymentOther : paymentType,
+                amount: monthlyAmount,
+                validatedBy: currentSecretary.uid,
+                validatedAt: serverTimestamp(),
+                createdAt: serverTimestamp(),
+                paymentMethod: 'onsite'
             });
-            
-            if (selectedMonths.length === 0) {
-                showAlert("Veuillez sélectionner au moins un mois", "error");
-                return;
-            }
-            
-            // Vérifier que le montant total correspond
-            const calculatedTotal = selectedMonths.length * monthlyAmount;
-            if (Math.abs(totalAmount - calculatedTotal) > 0.01) {
-                showAlert("Le montant total ne correspond pas au nombre de mois sélectionnés", "error");
-                return;
-            }
-            
-            try {
-                // Vérifier si l'élève existe
-                let studentDoc;
-                if (studentType === 'secondary') {
-                    studentDoc = await getDoc(doc(db, 'students', studentMatricule));
-                } else if (studentType === 'primary') {
-                    studentDoc = await getDoc(doc(db, 'primary_students', studentMatricule));
-                } else {
-                    studentDoc = await getDoc(doc(db, 'kindergarten_students', studentMatricule));
-                }
-                
-                if (!studentDoc.exists()) {
-                    showAlert("Élève non trouvé", "error");
-                    return;
-                }
-                
-                // Vérifier l'ordre des mois de paiement
-                const allMonths = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-                
-                // Récupérer les paiements de l'élève
-                const paymentsSnap = await getDocs(query(collection(db, 'payments'), where('studentId', '==', studentMatricule)));
-                const paidMonths = paymentsSnap.docs.map(doc => doc.data().month);
-                
-                // Vérifier si des mois sélectionnés sont déjà payés
-                const alreadyPaidMonths = selectedMonths.filter(month => paidMonths.includes(month));
-                if (alreadyPaidMonths.length > 0) {
-                    showAlert(`L'élève a déjà payé le(s) mois suivant(s): ${alreadyPaidMonths.join(', ')}`, "error");
-                    return;
-                }
-                
-                // Enregistrer les paiements
-                const batch = writeBatch(db);
-                
-                selectedMonths.forEach(month => {
-                    const paymentDocRef = doc(collection(db, 'payments'));
-                    batch.set(paymentDocRef, {
-                        studentId: studentMatricule,
-                        studentName: studentName,
-                        studentClass: studentClass,
-                        studentType: studentType,
-                        month: month,
-                        paymentType: paymentType === 'Autres' ? paymentOther : paymentType,
-                        amount: monthlyAmount,
-                        validatedBy: currentSecretary.uid,
-                        validatedAt: serverTimestamp(),
-                        createdAt: serverTimestamp(),
-                        paymentMethod: 'onsite'
-                    });
-                });
-                
-                await batch.commit();
-                
-                // Générer le reçu
-                await generateReceipt(studentName, selectedMonths, totalAmount, 'ONSITE-' + generatePaymentCode(), studentClass, paymentType === 'Autres' ? paymentOther : paymentType);
-                
-                showAlert('Paiement enregistré avec succès !', 'success');
-                document.getElementById('onsite-payment-form').reset();
-                document.getElementById('onsite-months-container').innerHTML = '';
-                document.getElementById('onsite-payment-other').style.display = 'none';
-                
-                // Mettre à jour les données
-                loadFeesData();
-                loadDashboardStats();
-                
-            } catch (error) {
-                showAlert('Erreur lors de l\'enregistrement: ' + error.message, 'error');
-            }
         });
-
+        
+        await batch.commit();
+        
+        // Générer le reçu
+        const finalPaymentType = paymentType === 'Autres' ? paymentOther : paymentType;
+        await generateReceipt(studentName, selectedMonths, totalAmount, 'ONSITE-' + generatePaymentCode(), studentClass, finalPaymentType);
+        
+        showAlert('Paiement enregistré avec succès !', 'success');
+        
+        // Réinitialiser le formulaire
+        document.getElementById('onsite-payment-form').reset();
+        document.getElementById('onsite-months-container').innerHTML = '';
+        document.getElementById('onsite-payment-other').style.display = 'none';
+        document.getElementById('onsite-student-name').value = '';
+        document.getElementById('onsite-student-class').value = '';
+        
+        // Mettre à jour les données
+        loadFeesData();
+        loadDashboardStats();
+        
+    } catch (error) {
+        showAlert('Erreur lors de l\'enregistrement: ' + error.message, 'error');
+    }
+});
         // --- Gestion des Frais (CORRIGÉE) ---
         async function loadFeesClasses() {
             const selectEl = document.getElementById('fees-class');
@@ -4536,25 +4925,25 @@ window.processInscriptionPayment = async (studentMatricule, studentType, student
 
         // Fonction pour traiter le paiement d'un étudiant directement depuis la gestion des frais
         window.processPaymentForStudent = async (studentMatricule, studentType, studentName, studentClass) => {
-            // Remplir automatiquement le formulaire de paiement
-            document.getElementById('onsite-student-id').value = studentMatricule;
-            document.getElementById('onsite-student-type').value = studentType;
-            document.getElementById('onsite-student-name').value = studentName;
-            document.getElementById('onsite-student-class').value = studentClass;
-            
-            // Générer les mois
-            generateMonthCheckboxes();
-            
-            // Naviguer vers la page de paiement
-            document.querySelectorAll('.nav-menu a, .page').forEach(el => el.classList.remove('active'));
-            document.querySelector('.nav-menu a[data-page="validate-payment"]').classList.add('active');
-            document.getElementById('validate-payment-page').classList.add('active');
-            document.getElementById('page-title').textContent = 'Valider Paiement';
-            
-            // Focus sur le montant mensuel
-            document.getElementById('onsite-monthly-amount').focus();
-        };
-
+    // Remplir automatiquement le formulaire de paiement
+    document.getElementById('onsite-student-id').value = studentMatricule;
+    document.getElementById('onsite-student-type').value = studentType;
+    document.getElementById('onsite-student-name').value = studentName;
+    document.getElementById('onsite-student-class').value = studentClass;
+    
+    // Générer les mois avec vérification des mois payés
+    const paymentType = document.getElementById('onsite-payment-type').value;
+    await generateMonthCheckboxes(studentMatricule, paymentType === 'Autres' ? null : paymentType);
+    
+    // Naviguer vers la page de paiement
+    document.querySelectorAll('.nav-menu a, .page').forEach(el => el.classList.remove('active'));
+    document.querySelector('.nav-menu a[data-page="validate-payment"]').classList.add('active');
+    document.getElementById('validate-payment-page').classList.add('active');
+    document.getElementById('page-title').textContent = 'Valider Paiement';
+    
+    // Focus sur le montant mensuel
+    document.getElementById('onsite-monthly-amount').focus();
+};
         // --- Statistiques Élèves (NOUVELLE VERSION) ---
         async function loadStudentsList() {
             try {
@@ -4570,7 +4959,38 @@ window.processInscriptionPayment = async (studentMatricule, studentType, student
             }
         }
 
-        async function loadClassStats() {
+// Fonction pour afficher le statut de paiement d'un élève
+window.showPaymentStatus = async (studentMatricule, studentType) => {
+    const paidMonths = await getPaidMonthsForStudent(studentMatricule);
+    
+    const allMonths = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+                      'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    
+    const unpaidMonths = allMonths.filter(month => !paidMonths.has(month));
+    
+    let statusHTML = `
+        <div style="padding: 15px;">
+            <h4>Statut des paiements</h4>
+            <p><strong>Matricule:</strong> ${studentMatricule}</p>
+            <p><strong>Mois payés:</strong> ${paidMonths.size > 0 ? Array.from(paidMonths).join(', ') : 'Aucun'}</p>
+            <p><strong>Mois restants:</strong> ${unpaidMonths.length > 0 ? unpaidMonths.join(', ') : 'Tous payés'}</p>
+            <div style="margin-top: 15px;">
+                <div style="background: #f0f0f0; height: 20px; border-radius: 10px; overflow: hidden;">
+                    <div style="background: #27ae60; width: ${(paidMonths.size / 12) * 100}%; height: 100%;"></div>
+                </div>
+                <p style="text-align: center; margin-top: 5px;">${paidMonths.size}/12 mois payés</p>
+            </div>
+        </div>
+    `;
+    
+    // Afficher dans un modal ou une notification
+    const modalContent = document.getElementById('student-details-content');
+    modalContent.innerHTML = statusHTML;
+    document.getElementById('student-details-modal').classList.remove('hidden');
+};
+
+        // Fonction pour afficher les statistiques par classe (SANS la liste des élèves)
+async function loadClassStats() {
     const container = document.getElementById('class-stats-container');
     container.innerHTML = '<p>Chargement des statistiques...</p>';
     
@@ -4585,19 +5005,19 @@ window.processInscriptionPayment = async (studentMatricule, studentType, student
         // Classes secondaires
         secondaryClassesSnap.forEach(doc => {
             const data = doc.data();
-            allClasses.push({...data, type: 'secondary'});
+            allClasses.push({...data, type: 'secondary', docId: doc.id});
         });
         
         // Classes primaires
         primaryClassesSnap.forEach(doc => {
             const data = doc.data();
-            allClasses.push({...data, type: 'primary'});
+            allClasses.push({...data, type: 'primary', docId: doc.id});
         });
         
         // Classes maternelles
         kindergartenClassesSnap.forEach(doc => {
             const data = doc.data();
-            allClasses.push({...data, type: 'kindergarten'});
+            allClasses.push({...data, type: 'kindergarten', docId: doc.id});
         });
         
         if (allClasses.length === 0) {
@@ -4606,14 +5026,14 @@ window.processInscriptionPayment = async (studentMatricule, studentType, student
         }
         
         let html = '';
+        let totalStudentsGlobal = 0;
         
         for (const classData of allClasses) {
-            // Compter les élèves dans cette classe - NOUVELLE APPROCHE
+            // Compter les élèves dans cette classe
             let studentCount = 0;
             let studentsList = [];
             
             if (classData.type === 'secondary') {
-                // Récupérer tous les élèves secondaires puis filtrer localement
                 const studentsSnap = await getDocs(collection(db, 'students'));
                 studentsSnap.forEach(doc => {
                     const data = doc.data();
@@ -4642,8 +5062,19 @@ window.processInscriptionPayment = async (studentMatricule, studentType, student
                 });
             }
             
+            totalStudentsGlobal += studentCount;
+            
             const typeText = classData.type === 'secondary' ? 'Secondaire' : 
                            classData.type === 'primary' ? 'Primaire' : 'Maternelle';
+            
+            // Calculer le pourcentage de remplissage
+            const capacity = classData.capacity || 0;
+            const fillPercentage = capacity > 0 ? Math.round((studentCount / capacity) * 100) : 0;
+            
+            // Déterminer la couleur de la barre de progression
+            let progressColor = '#27ae60'; // Vert
+            if (fillPercentage > 90) progressColor = '#e74c3c'; // Rouge
+            else if (fillPercentage > 75) progressColor = '#f39c12'; // Orange
             
             html += `
                 <div class="class-stat-card">
@@ -4651,43 +5082,772 @@ window.processInscriptionPayment = async (studentMatricule, studentType, student
                         <h5>${classData.name}</h5>
                         <span class="badge ${classData.type === 'secondary' ? 'badge-primary' : classData.type === 'primary' ? 'badge-success' : 'badge-info'}">${typeText}</span>
                     </div>
-                    <p><strong>Niveau:</strong> ${classData.level || 'Non spécifié'}</p>
-                    <p><strong>Capacité:</strong> ${classData.capacity || 'Non spécifié'}</p>
-                    <p><strong>Élèves inscrits:</strong> ${studentCount}</p>
                     
-                    <div class="class-students-list">
-                        <h6>Liste des élèves (${studentCount})</h6>
-                        ${studentsList.length > 0 ? 
-                            studentsList.map(student => `
-                                <div class="class-student-item">
-                                    <span>${student.fullName}</span>
-                                    <span>${student.matricule}</span>
-                                </div>
-                            `).join('') : 
-                            '<p>Aucun élève dans cette classe</p>'
-                        }
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;">
+                        <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                            <div style="font-size: 12px; color: #666;">Niveau</div>
+                            <div style="font-size: 16px; font-weight: bold;">${classData.level || 'Non spécifié'}</div>
+                        </div>
+                        <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                            <div style="font-size: 12px; color: #666;">Capacité</div>
+                            <div style="font-size: 16px; font-weight: bold;">${capacity}</div>
+                        </div>
                     </div>
                     
-                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-                        <button class="btn btn-primary btn-sm" onclick="exportClassStudents('${classData.name}', '${classData.type}')">
-                            <i class="fas fa-download"></i> Exporter
-                        </button>
-                        <button class="btn btn-info btn-sm" onclick="viewClassDetails('${classData.name}', '${classData.type}')">
-                            <i class="fas fa-eye"></i> Détails
-                        </button>
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span style="font-size: 14px; font-weight: 600;">Effectifs</span>
+                            <span style="font-size: 24px; font-weight: bold; color: var(--primary);">${studentCount}</span>
+                        </div>
+                        
+                        <!-- Barre de progression -->
+                        <div style="background: #f0f0f0; height: 10px; border-radius: 5px; overflow: hidden;">
+                            <div style="background: ${progressColor}; width: ${fillPercentage}%; height: 100%;"></div>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                            <span style="font-size: 11px; color: #666;">Places occupées</span>
+                            <span style="font-size: 11px; color: #666;">${studentCount}/${capacity} (${fillPercentage}%)</span>
+                        </div>
                     </div>
-                </div>
+                    
+                    // Dans la fonction loadClassStats(), remplacez cette partie :
+<div style="display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap;">
+    <button class="btn btn-success btn-sm" onclick="exportClassToExcel('${classData.name}', '${classData.type}')">
+        <i class="fas fa-file-excel"></i> Excel
+    </button>
+    <button class="btn btn-danger btn-sm" onclick="exportClassToPDF('${classData.name}', '${classData.type}')">
+        <i class="fas fa-file-pdf"></i> PDF
+    </button>
+    <button class="btn btn-info btn-sm" onclick="viewClassDetails('${classData.name}', '${classData.type}')">
+        <i class="fas fa-eye"></i> Détails
+    </button>
+    <button class="btn btn-warning btn-sm" onclick="printClassStudentCards('${classData.name}', '${classData.type}')">
+        <i class="fas fa-id-card"></i> Cartes
+    </button>
+</div>
             `;
         }
         
-        container.innerHTML = html;
+        container.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <div style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4 style="margin: 0; color: white;">Statistiques Globales</h4>
+                            <p style="margin: 5px 0 0; opacity: 0.9;">Répartition des élèves par classe</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 28px; font-weight: bold;">${totalStudentsGlobal}</div>
+                            <div style="font-size: 12px; opacity: 0.9;">Total Élèves</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+                    ${html}
+                </div>
+            </div>
+        `;
         
     } catch (error) {
         console.error("Erreur chargement statistiques classes:", error);
-        container.innerHTML = '<p>Erreur lors du chargement des statistiques</p>';
+        container.innerHTML = '<p style="color: var(--danger);">Erreur lors du chargement des statistiques</p>';
     }
 }
 
+// Fonction pour exporter les élèves d'une classe en Excel
+window.exportClassToExcel = async (className, classType) => {
+    try {
+        let students = [];
+        
+        // Récupérer les élèves de la classe
+        if (classType === 'secondary') {
+            const studentsSnap = await getDocs(collection(db, 'students'));
+            studentsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.class === className && data.status !== 'deleted') {
+                    students.push({...data, studentType: 'secondary'});
+                }
+            });
+        } else if (classType === 'primary') {
+            const studentsSnap = await getDocs(collection(db, 'primary_students'));
+            studentsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.class === className && data.status !== 'deleted') {
+                    students.push({...data, studentType: 'primary'});
+                }
+            });
+        } else {
+            const studentsSnap = await getDocs(collection(db, 'kindergarten_students'));
+            studentsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.class === className && data.status !== 'deleted') {
+                    students.push({...data, studentType: 'kindergarten'});
+                }
+            });
+        }
+        
+        if (students.length === 0) {
+            showAlert(`Aucun élève trouvé dans la classe ${className}`, 'warning');
+            return;
+        }
+        
+        // Préparer les données pour l'export
+        const exportData = students.map(student => ({
+            'Matricule': student.matricule,
+            'Nom complet': student.fullName,
+            'Date de naissance': student.birthdate,
+            'Lieu de naissance': student.birthplace || '',
+            'Sexe': student.gender === 'M' ? 'Masculin' : 'Féminin',
+            'Adresse': student.address || '',
+            'Téléphone': student.phone || '',
+            'Frais inscription': student.enrollmentFees || 0,
+            'Nom parent': student.parentName,
+            'Téléphone parent': student.parentPhone,
+            'Adresse parent': student.parentAddress || '',
+            'Statut': student.status === 'active' ? 'Actif' : 'Inactif',
+            'Date inscription': formatDate(student.createdAt?.toDate())
+        }));
+        
+        // Créer le fichier Excel
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, `Classe ${className}`);
+        
+        // Appliquer des styles aux en-têtes
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const address = XLSX.utils.encode_col(C) + "1";
+            if (!ws[address]) continue;
+            ws[address].s = {
+                font: { bold: true, color: { rgb: "FFFFFF" } },
+                fill: { fgColor: { rgb: "3498DB" } },
+                alignment: { horizontal: "center" }
+            };
+        }
+        
+        // Ajuster les largeurs de colonnes
+        const colWidths = [];
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            let maxLength = 0;
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                const cellAddress = XLSX.utils.encode_cell({c: C, r: R});
+                if (ws[cellAddress]) {
+                    const cellValue = ws[cellAddress].v;
+                    if (cellValue) {
+                        const length = cellValue.toString().length;
+                        if (length > maxLength) maxLength = length;
+                    }
+                }
+            }
+            colWidths.push({wch: Math.min(Math.max(maxLength, 10), 50)});
+        }
+        ws['!cols'] = colWidths;
+        
+        // Ajouter un en-tête avec les informations de la classe
+        const headerRow = XLSX.utils.encode_cell({c: 0, r: range.e.r + 2});
+        if (!ws[headerRow]) ws[headerRow] = {};
+        ws[headerRow].v = `Liste des élèves de la classe ${className} - Généré le ${new Date().toLocaleDateString('fr-FR')}`;
+        ws[headerRow].s = {
+            font: { italic: true, color: { rgb: "666666" } }
+        };
+        
+        XLSX.writeFile(wb, `classe_${className}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        showAlert(`Export Excel réussi: ${students.length} élève(s) de la classe ${className}`, 'success');
+        
+    } catch (error) {
+        console.error("Erreur export Excel classe:", error);
+        showAlert('Erreur lors de l\'export Excel: ' + error.message, 'error');
+    }
+};
+
+// Impression directe automatique – 6 cartes parfaitement fixes par page
+window.printClassStudentCards = async (className, classType) => {
+    try {
+
+        showAlert("Préparation des cartes d'élèves...", "info");
+
+        let students = [];
+        let collectionName = "";
+
+        if (classType === "secondary") collectionName = "students";
+        else if (classType === "primary") collectionName = "primary_students";
+        else collectionName = "kindergarten_students";
+
+        const snap = await getDocs(collection(db, collectionName));
+
+        snap.forEach(doc => {
+            const data = doc.data();
+            if (data.class === className && data.status !== "deleted") {
+                students.push({ ...data });
+            }
+        });
+
+        if (students.length === 0) {
+            showAlert("Aucun élève trouvé", "warning");
+            return;
+        }
+
+        // Tri alphabétique
+        students.sort((a, b) =>
+            (a.fullName || "").localeCompare(b.fullName || "", "fr", { sensitivity: "base" })
+        );
+
+        const year = new Date().getFullYear();
+        const nextYear = year + 1;
+
+        const printWindow = window.open("", "_blank");
+
+        const cardsPerPage = 6;
+        const totalPages = Math.ceil(students.length / cardsPerPage);
+        let pagesHTML = "";
+
+        for (let p = 0; p < totalPages; p++) {
+
+            pagesHTML += `<div class="print-page"><div class="cards-grid">`;
+
+            for (let i = 0; i < cardsPerPage; i++) {
+
+                const index = p * cardsPerPage + i;
+                const student = index < students.length ? students[index] : null;
+
+                if (student) {
+                    pagesHTML += `
+                    <div class="student-card">
+
+                        <div class="watermark-logo"></div>
+
+                        <div class="card-content">
+
+                            <div class="card-header">
+                                <img src="rd.png" class="mini-logo" onerror="this.style.display='none'">
+                                <div class="school-title">
+                                    HYBRILINK SCHOOL
+                                    <div class="card-subtitle">CARTE D'ÉLÈVE</div>
+                                </div>
+                                <img src="cs.png" class="mini-logo" onerror="this.style.display='none'">
+                            </div>
+
+                            <div class="card-body">
+
+                                <div class="photo-main">
+                                    ${student.photoURL ?
+                                        `<img src="${student.photoURL}" class="student-photo" onerror="this.style.display='none';this.parentNode.innerHTML='<div class=\\'photo-placeholder\\'></div>'">`
+                                        :
+                                        `<div class="photo-placeholder"></div>`
+                                    }
+                                </div>
+
+                                <div class="info-section">
+                                    <div><strong>Nom:</strong> ${student.fullName || ""}</div>
+                                    <div><strong>Né(e):</strong> ${student.birthdate || ""}</div>
+                                    <div><strong>Lieu:</strong> ${student.birthplace || ""}</div>
+                                    <div><strong>Classe:</strong> ${student.class || ""}</div>
+                                    <div><strong>Parent:</strong> ${student.parentName || ""}</div>
+                                    <div><strong>Tél parent:</strong> ${student.parentPhone || ""}</div>
+                                    ${classType === "secondary" && student.phone ?
+                                        `<div><strong>Tél élève:</strong> ${student.phone}</div>`
+                                        : ""}
+                                </div>
+
+                            </div>
+
+                            <div class="card-footer">
+                                <div class="matricule">Matricule: ${student.matricule || ""}</div>
+                                <div>${year}-${nextYear}</div>
+                            </div>
+
+                            <div class="signature">
+                                <div class="line"></div>
+                                <div class="line"></div>
+                            </div>
+
+                        </div>
+                    </div>
+                    `;
+                } else {
+                    pagesHTML += `<div class="student-card empty-card"></div>`;
+                }
+            }
+
+            pagesHTML += `</div></div>`;
+        }
+
+        const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <title>Impression cartes - Classe ${className}</title>
+        <style>
+
+        @page {
+            size: A4 portrait;
+            margin: 10mm 10mm 10mm 10mm;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: white;
+        }
+
+        /* PAGE FIXE EXACTE */
+        .print-page {
+            width: 190mm;
+            height: 277mm;
+            margin: 0 auto;
+            page-break-after: always;
+            box-sizing: border-box;
+            display: flex;
+        }
+
+        /* GRID FIXE 6 CARTES */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: repeat(3, 82mm);
+            gap: 8mm;
+            width: 100%;
+            height: 100%;
+        }
+
+        .student-card {
+            height: 100%;
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            color: white;
+            border: 2px solid gold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            box-sizing: border-box;
+        }
+
+        .empty-card {
+            background: #f4f4f4;
+            border: 2px dashed #ccc;
+        }
+
+        .watermark-logo {
+            position: absolute;
+            right: -10px;
+            bottom: -10px;
+            width: 120px;
+            height: 120px;
+            background-image: url('cs.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0.08;
+            transform: rotate(-20deg);
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 2;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .mini-logo {
+            width: 25px;
+            height: 25px;
+            background: white;
+            border-radius: 50%;
+            padding: 2px;
+            border: 1px solid gold;
+            object-fit: cover;
+        }
+
+        .school-title {
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .card-subtitle {
+            font-size: 7px;
+            font-weight: normal;
+            opacity: 0.9;
+        }
+
+        .card-body {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        .student-photo {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid gold;
+        }
+
+        .photo-placeholder {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: 2px solid gold;
+        }
+
+        .info-section {
+            font-size: 7.5px;
+            flex: 1;
+            line-height: 1.3;
+        }
+
+        .info-section div {
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .info-section strong {
+            display: inline-block;
+            width: 30%;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 7px;
+            margin-top: 5px;
+            padding-top: 3px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .matricule {
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .signature {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 3px;
+        }
+
+        .signature .line {
+            width: 40%;
+            height: 1px;
+            background: rgba(255,255,255,0.5);
+        }
+
+        /* Styles d'impression renforcés */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .print-page {
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+            .student-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+        </style>
+        </head>
+        <body>
+        ${pagesHTML}
+        <script>
+            // Impression automatique après chargement complet
+            window.onload = function() {
+                setTimeout(function() {
+                    window.print();
+                    // Optionnel : fermer après impression
+                    setTimeout(function() {
+                        window.close();
+                    }, 1000);
+                }, 500);
+            };
+        <\/script>
+        </body>
+        </html>
+        `;
+
+        printWindow.document.write(html);
+        printWindow.document.close();
+
+        showAlert(`${students.length} cartes envoyées à l'impression (${totalPages} page${totalPages > 1 ? 's' : ''})`, "success");
+
+    } catch (error) {
+        console.error(error);
+        showAlert("Erreur : " + error.message, "error");
+    }
+};
+// Fonction pour exporter les élèves d'une classe en PDF
+window.exportClassToPDF = async (className, classType) => {
+    try {
+        let students = [];
+        
+        // Récupérer les élèves de la classe
+        if (classType === 'secondary') {
+            const studentsSnap = await getDocs(collection(db, 'students'));
+            studentsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.class === className && data.status !== 'deleted') {
+                    students.push({...data, studentType: 'secondary'});
+                }
+            });
+        } else if (classType === 'primary') {
+            const studentsSnap = await getDocs(collection(db, 'primary_students'));
+            studentsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.class === className && data.status !== 'deleted') {
+                    students.push({...data, studentType: 'primary'});
+                }
+            });
+        } else {
+            const studentsSnap = await getDocs(collection(db, 'kindergarten_students'));
+            studentsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.class === className && data.status !== 'deleted') {
+                    students.push({...data, studentType: 'kindergarten'});
+                }
+            });
+        }
+        
+        if (students.length === 0) {
+            showAlert(`Aucun élève trouvé dans la classe ${className}`, 'warning');
+            return;
+        }
+        
+        // Créer le PDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape');
+        
+        // Titre
+        doc.setFontSize(18);
+        doc.setTextColor(52, 152, 219);
+        doc.text(`Liste des élèves - Classe ${className}`, 14, 15);
+        
+        // Sous-titre
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, 14, 22);
+        doc.text(`Type: ${classType === 'secondary' ? 'Secondaire' : classType === 'primary' ? 'Primaire' : 'Maternelle'}`, 14, 27);
+        doc.text(`Nombre d'élèves: ${students.length}`, 14, 32);
+        
+        // Préparer les données pour le tableau
+        const headers = [['Matricule', 'Nom complet', 'Date naiss.', 'Sexe', 'Parent', 'Tél parent', 'Statut']];
+        const data = students.map(student => [
+            student.matricule,
+            student.fullName,
+            student.birthdate,
+            student.gender === 'M' ? 'M' : 'F',
+            student.parentName,
+            student.parentPhone,
+            student.status === 'active' ? 'Actif' : 'Inactif'
+        ]);
+        
+        // Créer le tableau
+        doc.autoTable({
+            head: headers,
+            body: data,
+            startY: 40,
+            theme: 'striped',
+            headStyles: { 
+                fillColor: [52, 152, 219],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold'
+            },
+            alternateRowStyles: {
+                fillColor: [245, 245, 245]
+            },
+            columnStyles: {
+                0: { cellWidth: 30 },
+                1: { cellWidth: 50 },
+                2: { cellWidth: 20 },
+                3: { cellWidth: 10 },
+                4: { cellWidth: 45 },
+                5: { cellWidth: 30 },
+                6: { cellWidth: 15 }
+            },
+            didDrawPage: function(data) {
+                // Numéro de page
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text('Page ' + data.pageNumber, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
+            }
+        });
+        
+        // Ajouter un résumé en bas de page
+        const finalY = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(10);
+        doc.setTextColor(52, 152, 219);
+        doc.text('Résumé de la classe:', 14, finalY);
+        
+        doc.setFontSize(9);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Total élèves: ${students.length}`, 14, finalY + 7);
+        
+        // Compter les garçons et filles
+        const boys = students.filter(s => s.gender === 'M').length;
+        const girls = students.filter(s => s.gender === 'F').length;
+        doc.text(`Garçons: ${boys} | Filles: ${girls}`, 14, finalY + 14);
+        
+        // Ajouter les signatures
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        doc.text('Le Secrétaire', 14, doc.internal.pageSize.height - 20);
+        doc.text('Le Directeur', doc.internal.pageSize.width - 40, doc.internal.pageSize.height - 20);
+        
+        doc.line(14, doc.internal.pageSize.height - 22, 60, doc.internal.pageSize.height - 22);
+        doc.line(doc.internal.pageSize.width - 40, doc.internal.pageSize.height - 22, doc.internal.pageSize.width - 10, doc.internal.pageSize.height - 22);
+        
+        // Sauvegarder le PDF
+        doc.save(`classe_${className}_${new Date().toISOString().split('T')[0]}.pdf`);
+        
+        showAlert(`Export PDF réussi: ${students.length} élève(s) de la classe ${className}`, 'success');
+        
+    } catch (error) {
+        console.error("Erreur export PDF classe:", error);
+        showAlert('Erreur lors de l\'export PDF: ' + error.message, 'error');
+    }
+};
+
+// Fonction pour afficher les détails d'une classe (version simplifiée)
+window.viewClassDetails = async (className, classType) => {
+    try {
+        let students = [];
+        
+        if (classType === 'secondary') {
+            const studentsSnap = await getDocs(collection(db, 'students'));
+            studentsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.class === className && data.status !== 'deleted') {
+                    students.push(data);
+                }
+            });
+        } else if (classType === 'primary') {
+            const studentsSnap = await getDocs(collection(db, 'primary_students'));
+            studentsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.class === className && data.status !== 'deleted') {
+                    students.push(data);
+                }
+            });
+        } else {
+            const studentsSnap = await getDocs(collection(db, 'kindergarten_students'));
+            studentsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.class === className && data.status !== 'deleted') {
+                    students.push(data);
+                }
+            });
+        }
+
+        const modalContent = document.getElementById('student-details-content');
+        const typeText = classType === 'secondary' ? 'Secondaire' : 
+                       classType === 'primary' ? 'Primaire' : 'Maternelle';
+        
+        // Compter les garçons et filles
+        const boys = students.filter(s => s.gender === 'M').length;
+        const girls = students.filter(s => s.gender === 'F').length;
+        
+        let studentsHTML = '';
+        if (students.length > 0) {
+            studentsHTML = `
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px;">
+                    <table style="width: 100%; font-size: 12px;">
+                        <thead style="background: var(--primary); color: white; position: sticky; top: 0;">
+                            <tr>
+                                <th style="padding: 8px;">Matricule</th>
+                                <th style="padding: 8px;">Nom</th>
+                                <th style="padding: 8px;">Sexe</th>
+                                <th style="padding: 8px;">Date naiss.</th>
+                                <th style="padding: 8px;">Parent</th>
+                                <th style="padding: 8px;">Tél parent</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${students.map(student => `
+                                <tr style="border-bottom: 1px solid #eee;">
+                                    <td style="padding: 8px;">${student.matricule}</td>
+                                    <td style="padding: 8px;">${student.fullName}</td>
+                                    <td style="padding: 8px;">${student.gender === 'M' ? 'M' : 'F'}</td>
+                                    <td style="padding: 8px;">${student.birthdate}</td>
+                                    <td style="padding: 8px;">${student.parentName}</td>
+                                    <td style="padding: 8px;">${student.parentPhone}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            studentsHTML = '<p style="text-align: center; padding: 20px;">Aucun élève dans cette classe</p>';
+        }
+
+        modalContent.innerHTML = `
+            <div class="student-details">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0; color: var(--primary);">${className}</h4>
+                        <span class="badge ${classType === 'secondary' ? 'badge-primary' : classType === 'primary' ? 'badge-success' : 'badge-info'}">${typeText}</span>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+                        <div style="background: white; padding: 10px; border-radius: 8px;">
+                            <div style="font-size: 12px; color: #666;">Total élèves</div>
+                            <div style="font-size: 20px; font-weight: bold; color: var(--primary);">${students.length}</div>
+                        </div>
+                        <div style="background: white; padding: 10px; border-radius: 8px;">
+                            <div style="font-size: 12px; color: #666;">Garçons</div>
+                            <div style="font-size: 20px; font-weight: bold; color: #3498db;">${boys}</div>
+                        </div>
+                        <div style="background: white; padding: 10px; border-radius: 8px;">
+                            <div style="font-size: 12px; color: #666;">Filles</div>
+                            <div style="font-size: 20px; font-weight: bold; color: #e74c3c;">${girls}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h5 style="margin-bottom: 10px;">Liste des élèves</h5>
+                ${studentsHTML}
+                
+                <div style="display: flex; gap: 1rem; margin-top: 20px; justify-content: flex-end;">
+                    <button class="btn btn-success btn-sm" onclick="exportClassToExcel('${className}', '${classType}')">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="exportClassToPDF('${className}', '${classType}')">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('student-details-modal').classList.remove('hidden');
+        
+    } catch (error) {
+        console.error("Erreur affichage détails classe:", error);
+        showAlert("Erreur lors du chargement des détails", "error");
+    }
+};
 // --- Recherche des Élèves pour modification (AJOUTEZ CE CODE) ---
 document.getElementById('search-student-btn').addEventListener('click', async () => {
     const searchTerm = document.getElementById('search-student-modify').value.trim();
@@ -7341,87 +8501,67 @@ window.printStudentCard = async (studentMatricule, studentType) => {
             }
         };
 
-        window.validatePaymentByCode = async (paymentCode) => {
-            document.getElementById('payment-code-input').value = paymentCode;
-            document.getElementById('find-payment-btn').click();
-        };
+        document.getElementById('find-payment-btn').addEventListener('click', async () => {
+    const code = document.getElementById('payment-code-input').value;
+    if (!code) {
+        showAlert("Veuillez entrer un code de paiement", "error");
+        return;
+    }
+    
+    try {
+        const q = query(collection(db, 'payment_requests'), where('paymentCode', '==', code), where('status', '==', 'pending'));
+        const snap = await getDocs(q);
 
-        // Fonction pour exporter les élèves d'une classe spécifique
-        window.exportClassStudents = async (className, classType) => {
-            try {
-                let students = [];
-                
-                if (classType === 'secondary') {
-                    const studentsSnap = await getDocs(query(collection(db, 'students'), where('class', '==', className), where('status', '!=', 'deleted')));
-                    studentsSnap.forEach(doc => {
-                        const data = doc.data();
-                        students.push({...data, studentType: 'secondary'});
-                    });
-                } else if (classType === 'primary') {
-                    const studentsSnap = await getDocs(query(collection(db, 'primary_students'), where('class', '==', className), where('status', '!=', 'deleted')));
-                    studentsSnap.forEach(doc => {
-                        const data = doc.data();
-                        students.push({...data, studentType: 'primary'});
-                    });
-                                } else {
-                    const studentsSnap = await getDocs(query(collection(db, 'kindergarten_students'), where('class', '==', className), where('status', '!=', 'deleted')));
-                    studentsSnap.forEach(doc => {
-                        const data = doc.data();
-                        students.push({...data, studentType: 'kindergarten'});
-                    });
-                }
-
-                if (students.length === 0) {
-                    showAlert("Aucun élève dans cette classe", "warning");
-                    return;
-                }
-
-                // Préparer les données pour l'export
-                const exportData = students.map(student => ({
-                    'Matricule': student.matricule,
-                    'Nom complet': student.fullName,
-                    'Type': student.studentType === 'secondary' ? 'Secondaire' : 
-                           student.studentType === 'primary' ? 'Primaire' : 'Maternelle',
-                    'Classe': student.class,
-                    'Date de naissance': student.birthdate,
-                    'Lieu de naissance': student.birthplace || '',
-                    'Sexe': student.gender === 'M' ? 'Masculin' : 'Féminin',
-                    'Adresse': student.address || '',
-                    'Téléphone': student.phone || '',
-                    'Frais inscription': student.enrollmentFees || 0,
-                    'Nom parent': student.parentName,
-                    'Téléphone parent': student.parentPhone,
-                    'Adresse parent': student.parentAddress || '',
-                    'Statut': student.status === 'active' ? 'Actif' : 'Inactif',
-                    'Date inscription': formatDate(student.createdAt?.toDate())
-                }));
-
-                // Exporter en Excel
-                const ws = XLSX.utils.json_to_sheet(exportData);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, `Élèves ${className}`);
-
-                // Appliquer des styles
-                const range = XLSX.utils.decode_range(ws['!ref']);
-                for (let C = range.s.c; C <= range.e.c; ++C) {
-                    const address = XLSX.utils.encode_col(C) + "1";
-                    if (!ws[address]) continue;
-                    ws[address].s = {
-                        font: { bold: true, color: { rgb: "FFFFFF" } },
-                        fill: { fgColor: { rgb: "3498DB" } },
-                        alignment: { horizontal: "center" }
-                    };
-                }
-
-                XLSX.writeFile(wb, `eleves_${className}_${new Date().toISOString().split('T')[0]}.xlsx`);
-                showAlert(`Export réussi: ${students.length} élève(s) exporté(s)`, "success");
-
-            } catch (error) {
-                console.error("Erreur export classe:", error);
-                showAlert("Erreur lors de l'export", "error");
-            }
-        };
-
+        if (snap.empty) {
+            showAlert('Aucune demande de paiement en attente trouvée pour ce code.', 'error');
+            document.getElementById('payment-details-card').classList.add('hidden');
+            return;
+        }
+        
+        foundRequest = snap.docs[0];
+        const data = foundRequest.data();
+        
+        // Vérifier quels mois sont déjà payés
+        const paidMonths = await getPaidMonthsForStudent(data.studentId, data.paymentType);
+        const unpaidMonths = data.months.filter(month => !paidMonths.has(month));
+        
+        if (unpaidMonths.length === 0) {
+            showAlert('Tous les mois de cette demande ont déjà été payés.', 'warning');
+            return;
+        }
+        
+        // Mettre à jour les mois non payés dans la demande
+        if (unpaidMonths.length < data.months.length) {
+            const unpaidAmount = (data.amount / data.months.length) * unpaidMonths.length;
+            
+            document.getElementById('payment-student-name').textContent = data.studentName;
+            document.getElementById('payment-months').innerHTML = `
+                ${unpaidMonths.join(', ')} 
+                <span style="color: #999; font-size: 11px;">
+                    (${data.months.length - unpaidMonths.length} mois déjà payés ignorés)
+                </span>
+            `;
+            document.getElementById('payment-type').textContent = data.paymentType || 'Frais scolaires';
+            document.getElementById('payment-amount').textContent = `$${unpaidAmount.toFixed(2)}`;
+            
+            // Stocker les mois non payés pour la validation
+            foundRequest._unpaidMonths = unpaidMonths;
+            foundRequest._unpaidAmount = unpaidAmount;
+        } else {
+            document.getElementById('payment-student-name').textContent = data.studentName;
+            document.getElementById('payment-months').textContent = data.months.join(', ');
+            document.getElementById('payment-type').textContent = data.paymentType || 'Frais scolaires';
+            document.getElementById('payment-amount').textContent = `$${data.amount.toFixed(2)}`;
+            
+            foundRequest._unpaidMonths = data.months;
+            foundRequest._unpaidAmount = data.amount;
+        }
+        
+        document.getElementById('payment-details-card').classList.remove('hidden');
+    } catch (error) {
+        showAlert('Erreur de recherche: ' + error.message, 'error');
+    }
+});
         // Fonction pour exporter les enseignants d'une classe spécifique
         window.exportClassTeachers = async (className, classType) => {
             try {
@@ -7756,124 +8896,302 @@ window.printStudentCard = async (studentMatricule, studentType) => {
             printWindow.document.close();
         });
 
-        // Impression du bordereau d'inscription
-        window.printEnrollmentForm = async (studentType) => {
-            try {
-                if (!lastEnrolledStudent) {
-                    showAlert("Aucun élève n'a été inscrit récemment.", "error");
-                    return;
-                }
-                
-                const studentData = lastEnrolledStudent;
-                const enrollmentSlipContent = document.getElementById('enrollment-slip-content');
-                
-                const studentTypeText = studentType === 'secondary' ? 'Secondaire' : 
-                                      studentType === 'primary' ? 'Primaire' : 'Maternelle';
-                
-                const enrollmentSlipHTML = `
-                    <div class="receipt">
-                        <div class="receipt-header">
-                            <div class="receipt-logo">
-                                <img src="R.png" alt="Logo CS la Colombe" style="max-width: 150px;">
-                            </div>
-                            <div class="receipt-title">BORDEREAU D'INSCRIPTION</div>
-                            <div>hybrilink</div>
-                            <div>Année scolaire: ${new Date().getFullYear()}-${new Date().getFullYear() + 1}</div>
-                        </div>
-                        
-                        <div class="receipt-details">
-                            <div class="receipt-row">
-                                <span>Matricule:</span>
-                                <span><strong>${studentData.matricule}</strong></span>
-                            </div>
-                            <div class="receipt-row">
-                                <span>Nom complet:</span>
-                                <span>${studentData.fullName}</span>
-                            </div>
-                            <div class="receipt-row">
-                                <span>Type:</span>
-                                <span>${studentTypeText}</span>
-                            </div>
-                            <div class="receipt-row">
-                                <span>Classe:</span>
-                                <span>${studentData.class}</span>
-                            </div>
-                            <div class="receipt-row">
-                                <span>Date de naissance:</span>
-                                <span>${studentData.birthdate}</span>
-                            </div>
-                            <div class="receipt-row">
-                                <span>Lieu de naissance:</span>
-                                <span>${studentData.birthplace || 'Non spécifié'}</span>
-                            </div>
-                            <div class="receipt-row">
-                                <span>Sexe:</span>
-                                <span>${studentData.gender === 'M' ? 'Masculin' : 'Féminin'}</span>
-                            </div>
-                            <div class="receipt-row">
-                                <span>Adresse:</span>
-                                <span>${studentData.address}</span>
-                            </div>
-                            ${studentType === 'secondary' ? `
-                            <div class="receipt-row">
-                                <span>Téléphone:</span>
-                                <span>${studentData.phone || 'Non spécifié'}</span>
-                            </div>` : ''}
-                            <div class="receipt-divider"></div>
-                            <div class="receipt-row">
-                                <span>Nom du parent:</span>
-                                <span>${studentData.parentName}</span>
-                            </div>
-                            <div class="receipt-row">
-                                <span>Téléphone du parent:</span>
-                                <span>${studentData.parentPhone}</span>
-                            </div>
-                            <div class="receipt-row">
-                                <span>Adresse du parent:</span>
-                                <span>${studentData.parentAddress || 'Non spécifié'}</span>
-                            </div>
-                            <div class="receipt-divider"></div>
-                            <div class="receipt-row">
-                                <span>Frais d'inscription:</span>
-                                <span class="currency-display"><strong>$${(studentData.enrollmentFees || 0).toFixed(2)}</strong></span>
-                            </div>
-                            <div class="receipt-row">
-                                <span>Date d'inscription:</span>
-                                <span>${new Date().toLocaleDateString('fr-FR')}</span>
-                            </div>
-                            <div class="receipt-row">
-                                <span>Inscrit par:</span>
-                                <span>${currentSecretary.fullName}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="signature-area">
-                            <div class="signature-box">
-                                <p>Le Secrétaire</p>
-                                <div class="signature-line"></div>
-                            </div>
-                            <div class="signature-box">
-                                <p>Le Directeur</p>
-                                <div class="signature-line"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="receipt-footer">
-                            <p><strong>Important:</strong> Conservez ce bordereau pour toute référence future.</p>
-                            <p>Merci pour votre confiance - hybrilink</p>
+        // ===============================
+// IMPRESSION BORDEREAU PREMIUM
+// 2 EXEMPLAIRES VERTICAUX
+// ===============================
+window.printEnrollmentForm = async (studentType) => {
+    try {
+
+        let studentData;
+        let typeText;
+
+        switch(studentType) {
+            case 'secondary':
+                studentData = lastEnrolledSecondaryStudent;
+                typeText = 'SECONDAIRE';
+                if (!studentData) return showAlert("Aucun élève secondaire inscrit récemment.", "error");
+                break;
+
+            case 'primary':
+                studentData = lastEnrolledPrimaryStudent;
+                typeText = 'PRIMAIRE';
+                if (!studentData) return showAlert("Aucun élève primaire inscrit récemment.", "error");
+                break;
+
+            case 'kindergarten':
+                studentData = lastEnrolledKindergartenStudent;
+                typeText = 'MATERNELLE';
+                if (!studentData) return showAlert("Aucun élève maternelle inscrit récemment.", "error");
+                break;
+
+            default:
+                return showAlert("Type non reconnu", "error");
+        }
+
+        const bordereauCode = "BOR-" + Date.now().toString().slice(-6);
+        const now = new Date();
+
+        const currentDate = now.toLocaleDateString("fr-FR");
+        const currentTime = now.toLocaleTimeString("fr-FR", {hour:'2-digit', minute:'2-digit'});
+
+        const generateBordereau = () => `
+            <div class="bordereau">
+
+                <div class="watermark">${typeText}</div>
+
+                <div class="header">
+                    <div class="logo-area">
+                        <img src="R.png" class="logo"/>
+                        <div>
+                            <h2>HYBRILINK</h2>
+                            <span>BORDEREAU D'INSCRIPTION</span>
                         </div>
                     </div>
-                `;
-                
-                enrollmentSlipContent.innerHTML = enrollmentSlipHTML;
-                document.getElementById('enrollment-slip-modal').classList.remove('hidden');
-                
-            } catch (error) {
-                console.error("Erreur génération bordereau:", error);
-                showAlert("Erreur lors de la génération du bordereau", "error");
-            }
-        };
+                    <div class="code-box">${bordereauCode}</div>
+                </div>
 
+                <div class="info-block">
+                    <table>
+                        <tr>
+                            <td><strong>Matricule :</strong></td>
+                            <td>${studentData.matricule}</td>
+                            <td><strong>Date :</strong></td>
+                            <td>${currentDate}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Nom complet :</strong></td>
+                            <td colspan="3">${studentData.fullName}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Classe :</strong></td>
+                            <td>${studentData.class}</td>
+                            <td><strong>Sexe :</strong></td>
+                            <td>${studentData.gender === 'M' ? 'Masculin' : 'Féminin'}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="section">
+                    <h4>Responsable légal</h4>
+                    ${studentData.parentName}<br>
+                    Téléphone : ${studentData.parentPhone}<br>
+                    Adresse : ${studentData.parentAddress || 'Non spécifiée'}
+                </div>
+
+                <div class="fees">
+                    Frais d'inscription :
+                    <span>$${(studentData.enrollmentFees || 0).toFixed(2)}</span>
+                </div>
+
+                <div class="signatures">
+                    <div>
+                        <div class="line"></div>
+                        Signature Secrétaire
+                    </div>
+                    <div>
+                        <div class="line"></div>
+                        Signature Parent
+                    </div>
+                </div>
+
+                <div class="footer">
+                    Document généré le ${currentDate} à ${currentTime}
+                </div>
+            </div>
+        `;
+
+        const printHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Bordereau - ${studentData.fullName}</title>
+
+            <style>
+                @page {
+                    size: A4 landscape;
+                    margin: 10mm;
+                }
+
+                body {
+                    margin: 0;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    background: white;
+                }
+
+                .page {
+                    width: 100%;
+                }
+
+                .bordereau {
+                    height: 48%;
+                    border: 2px solid #2c3e50;
+                    border-radius: 12px;
+                    padding: 20px;
+                    box-sizing: border-box;
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                .bordereau:first-child {
+                    margin-bottom: 2%;
+                }
+
+                .watermark {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    font-size: 80px;
+                    color: rgba(44, 62, 80, 0.05);
+                    font-weight: bold;
+                    letter-spacing: 5px;
+                    pointer-events: none;
+                }
+
+                .header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    border-bottom: 2px solid #3498db;
+                    padding-bottom: 10px;
+                    margin-bottom: 15px;
+                }
+
+                .logo-area {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .logo {
+                    height: 45px;
+                }
+
+                .header h2 {
+                    margin: 0;
+                    color: #3498db;
+                }
+
+                .code-box {
+                    background: #ecf0f1;
+                    padding: 6px 12px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                }
+
+                table {
+                    width: 100%;
+                    font-size: 13px;
+                }
+
+                td {
+                    padding: 5px;
+                }
+
+                .section {
+                    background: #f4f6f7;
+                    padding: 10px;
+                    border-radius: 8px;
+                    margin-top: 10px;
+                    font-size: 12px;
+                }
+
+                .section h4 {
+                    margin: 0 0 5px 0;
+                    color: #2c3e50;
+                }
+
+                .fees {
+                    margin-top: 12px;
+                    background: linear-gradient(135deg, #3498db, #2c3e50);
+                    color: white;
+                    padding: 10px;
+                    border-radius: 8px;
+                    font-size: 15px;
+                    display: flex;
+                    justify-content: space-between;
+                }
+
+                .fees span {
+                    font-weight: bold;
+                    font-size: 18px;
+                }
+
+                .signatures {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-top: 30px;
+                    font-size: 12px;
+                }
+
+                .line {
+                    border-top: 1px solid black;
+                    width: 150px;
+                    margin-bottom: 5px;
+                }
+
+                .footer {
+                    position: absolute;
+                    bottom: 10px;
+                    font-size: 10px;
+                    color: #777;
+                }
+
+                .cut-line {
+                    border-top: 2px dashed red;
+                    text-align: center;
+                    margin: 10px 0;
+                    font-size: 11px;
+                    color: red;
+                    padding-top: 3px;
+                }
+
+                @media print {
+                    body {
+                        margin: 0;
+                    }
+                }
+            </style>
+        </head>
+
+        <body>
+            <div class="page">
+                ${generateBordereau()}
+
+                <div class="cut-line">
+                    ✂ DÉCOUPER ICI ✂
+                </div>
+
+                ${generateBordereau()}
+            </div>
+
+            <script>
+                window.onload = function() {
+                    setTimeout(function() {
+                        window.print();
+                        setTimeout(function() {
+                            window.close();
+                        }, 800);
+                    }, 400);
+                };
+            <\/script>
+        </body>
+        </html>
+        `;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printHTML);
+        printWindow.document.close();
+
+        showAlert("Bordereau premium généré avec succès", "success");
+
+    } catch (error) {
+        console.error(error);
+        showAlert("Erreur : " + error.message, "error");
+    }
+};
         // Bouton impression du bordereau
         document.getElementById('print-enrollment-slip-btn').addEventListener('click', () => {
             const enrollmentSlipContent = document.getElementById('enrollment-slip-content').innerHTML;
@@ -8572,6 +9890,7 @@ navigator.serviceWorker.addEventListener('controllerchange', () => {
   }
 })();
 </script>
+
 
 </body>
 </html>

@@ -5110,8 +5110,7 @@ async function loadClassStats() {
                             <span style="font-size: 11px; color: #666;">${studentCount}/${capacity} (${fillPercentage}%)</span>
                         </div>
                     </div>
-                    
-                    // Dans la fonction loadClassStats(), remplacez cette partie :
+                 
 <div style="display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap;">
     <button class="btn btn-success btn-sm" onclick="exportClassToExcel('${classData.name}', '${classData.type}')">
         <i class="fas fa-file-excel"></i> Excel
@@ -8723,71 +8722,103 @@ window.printStudentCard = async (studentMatricule, studentType) => {
     }
 };
 
-        // Génération de reçu
-        async function generateReceipt(studentName, months, amount, paymentCode, studentClass, paymentType) {
+  // Génération de reçu avec 2 exemplaires sur la même page
+async function generateReceipt(studentName, months, amount, paymentCode, studentClass, paymentType) {
     const receiptContent = document.getElementById('receipt-content');
     
     // Adapter l'affichage pour les frais d'inscription
     const monthsDisplay = paymentType === 'Frais d\'inscription' ? 'Inscription' : months.join(', ');
+    const currentDate = new Date().toLocaleDateString('fr-FR');
+    const currentTime = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     
-    const receiptHTML = `
-        <div class="receipt">
+    // Fonction pour générer un exemplaire
+    const generateReceiptCopy = (copyNumber) => `
+        <div class="receipt" style="margin-bottom: ${copyNumber === 1 ? '20px' : '0'}; page-break-inside: avoid;">
             <div class="receipt-header">
-                <div class="receipt-logo">
-                    <img src="R.png" alt="Logo hybrilink" style="max-width: 150px;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+                    <img src="R.png" alt="Logo hybrilink" style="max-width: 60px;">
+                    <div>
+                        <div class="receipt-title">REÇU DE PAIEMENT</div>
+                        <div style="font-size: 11px; color: #666;">hybrilink - ${copyNumber === 1 ? 'ORIGINAL' : 'DUPLICATA'}</div>
+                    </div>
                 </div>
-                <div class="receipt-title">REÇU DE PAIEMENT</div>
-                <div>hybrilink</div>
-                <div>Code: ${paymentCode}</div>
+                <div style="background: #f0f0f0; padding: 5px; border-radius: 4px; font-size: 11px;">
+                    Code: ${paymentCode}
+                </div>
             </div>
             
             <div class="receipt-details">
-                <div class="receipt-row">
-                    <span>Élève:</span>
-                    <span>${studentName}</span>
-                </div>
-                <div class="receipt-row">
-                    <span>Classe:</span>
-                    <span>${studentClass}</span>
-                </div>
-                <div class="receipt-row">
-                    <span>Type de frais:</span>
-                    <span>${paymentType || 'Frais scolaires'}</span>
-                </div>
-                <div class="receipt-row">
-                    <span>Période:</span>
-                    <span>${monthsDisplay}</span>
-                </div>
-                <div class="receipt-row">
-                    <span>Montant:</span>
-                    <span class="currency-display">$${amount.toFixed(2)}</span>
-                </div>
-                <div class="receipt-divider"></div>
-                <div class="receipt-row">
-                    <span>Date:</span>
-                    <span>${new Date().toLocaleDateString('fr-FR')}</span>
-                </div>
-                <div class="receipt-row">
-                    <span>Validé par:</span>
-                    <span>${currentSecretary.fullName}</span>
+                <table style="width: 100%; font-size: 11px;">
+                    <tr>
+                        <td style="padding: 3px;"><strong>Élève:</strong></td>
+                        <td style="padding: 3px;">${studentName}</td>
+                        <td style="padding: 3px;"><strong>Classe:</strong></td>
+                        <td style="padding: 3px;">${studentClass}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 3px;"><strong>Type:</strong></td>
+                        <td style="padding: 3px;">${paymentType || 'Frais scolaires'}</td>
+                        <td style="padding: 3px;"><strong>Période:</strong></td>
+                        <td style="padding: 3px;">${monthsDisplay}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 3px;"><strong>Montant:</strong></td>
+                        <td style="padding: 3px;" class="currency-display">$${amount.toFixed(2)}</td>
+                        <td style="padding: 3px;"><strong>Date:</strong></td>
+                        <td style="padding: 3px;">${currentDate}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 3px;"><strong>Validé par:</strong></td>
+                        <td style="padding: 3px;" colspan="3">${currentSecretary?.fullName || 'Secrétaire'}</td>
+                    </tr>
+                </table>
+                
+                <div class="receipt-divider" style="margin: 10px 0;"></div>
+                
+                <div style="text-align: center; font-size: 10px; color: #666;">
+                    <p style="margin: 5px 0;">Arrêté la présente quittance à la somme de <strong>$${amount.toFixed(2)}</strong></p>
                 </div>
             </div>
             
-            <div class="signature-area">
-                <div class="signature-box">
+            <div class="signature-area" style="margin-top: 15px; display: flex; justify-content: space-between; font-size: 9px;">
+                <div class="signature-box" style="text-align: center; width: 40%;">
                     <p>Le Secrétaire</p>
-                    <div class="signature-line"></div>
+                    <div class="signature-line" style="border-top: 1px solid #000; margin-top: 20px;"></div>
                 </div>
-                <div class="signature-box">
+                <div class="signature-box" style="text-align: center; width: 40%;">
                     <p>Le Directeur</p>
-                    <div class="signature-line"></div>
+                    <div class="signature-line" style="border-top: 1px solid #000; margin-top: 20px;"></div>
                 </div>
             </div>
             
-            <div class="receipt-footer">
-                <p>Merci pour votre confiance</p>
-                <p>hybrilink</p>
+            <div class="receipt-footer" style="text-align: center; margin-top: 10px; font-size: 8px; color: #999; border-top: 1px dashed #ccc; padding-top: 5px;">
+                <p>hybrilink - ${currentDate} à ${currentTime}</p>
             </div>
+        </div>
+    `;
+    
+    // Créer le contenu avec 2 exemplaires
+    const receiptHTML = `
+        <div style="max-width: 700px; margin: 0 auto;">
+            <!-- Ligne de coupe entre les deux reçus -->
+            <div style="position: relative; margin: 5px 0; text-align: center;">
+                <div style="border-top: 2px dashed red; margin: 10px 0;"></div>
+                <div style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: white; padding: 0 10px; color: red; font-size: 10px; font-weight: bold;">
+                    ✂ 1er EXEMPLAIRE - À CONSERVER PAR L'ÉCOLE ✂
+                </div>
+            </div>
+            
+            ${generateReceiptCopy(1)}
+            
+            <!-- Ligne de coupe entre les deux reçus -->
+            <div style="position: relative; margin: 5px 0; text-align: center;">
+                <div style="border-top: 2px dashed blue; margin: 10px 0;"></div>
+                <div style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: white; padding: 0 10px; color: blue; font-size: 10px; font-weight: bold;">
+                    ✂ 2ème EXEMPLAIRE - À REMETTRE AU PARENT ✂
+                </div>
+            </div>
+            
+            ${generateReceiptCopy(2)}
         </div>
     `;
     
@@ -8795,106 +8826,148 @@ window.printStudentCard = async (studentMatricule, studentType) => {
     document.getElementById('receipt-modal').classList.remove('hidden');
 }
 
-        // Impression du reçu
-        document.getElementById('print-receipt-btn').addEventListener('click', () => {
-            const receiptContent = document.getElementById('receipt-content').innerHTML;
-            const printWindow = window.open('', '_blank');
-            
-            const printHTML = `
-                <!DOCTYPE html>
-                <html>
-                    <head>
-                        <title>Reçu de paiement - hybrilink</title>
-                        <style>
-                            body { 
-                                font-family: Arial, sans-serif; 
-                                margin: 20px; 
-                                font-size: 12px;
-                            }
-                            .receipt { 
-                                max-width: 600px; 
-                                margin: 0 auto; 
-                                border: 1px solid #ddd; 
-                                padding: 20px; 
-                            }
-                            .receipt-header { 
-                                text-align: center; 
-                                margin-bottom: 20px; 
-                                border-bottom: 2px solid #3498db; 
-                                padding-bottom: 1rem; 
-                            }
-                            .receipt-title { 
-                                font-size: 18px; 
-                                font-weight: bold; 
-                                margin: 10px 0; 
-                                color: #3498db; 
-                            }
-                            .receipt-row { 
-                                display: flex; 
-                                justify-content: space-between; 
-                                margin-bottom: 8px; 
-                            }
-                            .receipt-divider { 
-                                border-top: 1px solid #ddd; 
-                                margin: 15px 0; 
-                            }
-                            .signature-area { 
-                                margin-top: 3rem; 
-                                display: flex; 
-                                justify-content: space-between; 
-                            }
-                            .signature-box { 
-                                text-align: center; 
-                                width: 45%; 
-                            }
-                            .signature-line { 
-                                border-top: 1px solid #000; 
-                                margin-top: 3rem; 
-                            }
-                            .receipt-footer { 
-                                text-align: center; 
-                                margin-top: 20px; 
-                                font-size: 11px; 
-                                color: #666; 
-                                border-top: 1px solid #eee; 
-                                padding-top: 1rem; 
-                            }
-                            .currency-display { 
-                                font-weight: bold; 
-                                color: #27ae60; 
-                            }
-                            @media print {
-                                body { 
-                                    margin: 0; 
-                                    padding: 10px;
-                                }
-                                .receipt { 
-                                    border: none; 
-                                    box-shadow: none; 
-                                }
-                                .no-print {
-                                    display: none !important;
-                                }
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${receiptContent}
-                        <script>
-                            window.onload = function() {
-                                window.print();
-                                setTimeout(function() {
-                                    window.close();
-                                }, 1000);
-                            }
-                        <\/script>
-                    </body>
-                </html>
-            `;
-            
-            printWindow.document.write(printHTML);
-            printWindow.document.close();
-        });
+// Impression du reçu avec 2 exemplaires
+document.getElementById('print-receipt-btn').addEventListener('click', () => {
+    const receiptContent = document.getElementById('receipt-content').innerHTML;
+    const printWindow = window.open('', '_blank');
+    
+    const printHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Reçu de paiement - hybrilink (2 exemplaires)</title>
+            <style>
+                @page {
+                    size: A4;
+                    margin: 10mm;
+                }
+                
+                body { 
+                    font-family: Arial, sans-serif; 
+                    margin: 0;
+                    padding: 10px;
+                    font-size: 11px;
+                    background: white;
+                }
+                
+                .receipt { 
+                    max-width: 650px; 
+                    margin: 0 auto; 
+                    border: 1px solid #ddd; 
+                    padding: 15px; 
+                    border-radius: 8px;
+                    background: white;
+                    page-break-inside: avoid;
+                }
+                
+                .receipt-header { 
+                    text-align: center; 
+                    margin-bottom: 15px; 
+                    border-bottom: 2px solid #3498db; 
+                    padding-bottom: 10px; 
+                }
+                
+                .receipt-title { 
+                    font-size: 16px; 
+                    font-weight: bold; 
+                    color: #3498db; 
+                }
+                
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                }
+                
+                td { 
+                    padding: 4px; 
+                }
+                
+                .receipt-divider { 
+                    border-top: 1px solid #ddd; 
+                    margin: 10px 0; 
+                }
+                
+                .signature-area { 
+                    margin-top: 15px; 
+                    display: flex; 
+                    justify-content: space-between; 
+                }
+                
+                .signature-box { 
+                    text-align: center; 
+                    width: 40%; 
+                }
+                
+                .signature-line { 
+                    border-top: 1px solid #000; 
+                    margin-top: 20px; 
+                }
+                
+                .currency-display { 
+                    font-weight: bold; 
+                    color: #27ae60; 
+                }
+                
+                /* Styles pour les lignes de coupe */
+                .cut-line {
+                    position: relative;
+                    margin: 10px 0;
+                    text-align: center;
+                }
+                
+                .cut-line hr {
+                    border: none;
+                    border-top: 2px dashed red;
+                    margin: 10px 0;
+                }
+                
+                .cut-label {
+                    position: absolute;
+                    top: -8px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: white;
+                    padding: 0 10px;
+                    color: red;
+                    font-size: 10px;
+                    font-weight: bold;
+                }
+                
+                /* S'assurer que les deux reçus tiennent sur une page */
+                @media print {
+                    body { 
+                        margin: 0; 
+                        padding: 5mm;
+                    }
+                    .receipt { 
+                        border: 1px solid #000;
+                        box-shadow: none; 
+                    }
+                    .cut-line hr {
+                        border-top: 2px dashed #666;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            ${receiptContent}
+            <script>
+                window.onload = function() {
+                    setTimeout(function() {
+                        window.print();
+                        setTimeout(function() {
+                            window.close();
+                        }, 1000);
+                    }, 500);
+                }
+            <\/script>
+        </body>
+        </html>
+    `;
+    
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+}); 
 
         // ===============================
 // IMPRESSION BORDEREAU PREMIUM
